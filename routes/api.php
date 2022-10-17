@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\BookAPIController;
+use App\Http\Controllers\BookController;
+use App\Http\Controllers\LoginController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,5 +19,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::post('session', [LoginController::class, 'login'])->name('api.login');
+// Route::apiResource('books', BookAPIController::class);
+// Route::get('books', BookController::class);
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::apiResource('books', BookAPIController::class);
+    Route::delete('session', [LoginController::class, 'logout'])->name('api.logout');
 });
 

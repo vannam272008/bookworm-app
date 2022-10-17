@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\BookCollection;
 use Illuminate\Http\Request;
-use App\Models\Book;
+use Illuminate\Support\Facades\Auth;
 
-class BookAPIController extends Controller
+class LoginController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -15,8 +14,7 @@ class BookAPIController extends Controller
      */
     public function index()
     {
-        $books = Book::orderBy('id', 'desc')->paginate(5);
-        return new BookCollection($books);
+        //
     }
 
     /**
@@ -37,7 +35,16 @@ class BookAPIController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $credentials = $request->validate([
+            'email' => ['required','email'],
+            'password' => ['required'],
+        ]);
+
+        if (Auth::attempt($credentials)){
+            $user = Auth::user();
+            return response()->json($user);
+        }
+        return response()->json('Login failed: Invalid username or password', 422);
     }
 
     /**
@@ -80,8 +87,31 @@ class BookAPIController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request)
     {
-        //
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return response('Token deleted successed!',204);
+    }
+    
+    public function login(Request $request){
+        $credentials = $request->validate([
+            'email' => ['required','email'],
+            'password' => ['required'],
+        ]);
+
+        if (Auth::attempt( $credentials)) {
+            $user =  $request -> Auth::user();
+            $user-> access_token = $user -> createToken("API_TOKEN")->plainTextToken;
+            return response()->json([$user]);
+        }
+        return response()->json('Login failed: Invalid username or password.', 422);
+    }
+
+    public function logout(Request $request)
+    {
+        $request -> auth() -> user() -> tokens() -> delete();
+        return response()->json('', 204);
     }
 }
