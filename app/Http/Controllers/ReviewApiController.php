@@ -2,21 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Repositories\ReviewRepository;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
-class BookController extends Controller
+class ReviewApiController extends Controller
 {
+
+    private $reviewRepository;
+    public function __construct(ReviewRepository $reviewRepository)
+    {
+        $this->reviewRepository = $reviewRepository;
+    }
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        // return view('book.index', [
-        //     'books' => Book::orderBy('id', 'desc')->get()
-        // ]);
+        return $this->reviewRepository->sort($request);
     }
 
     /**

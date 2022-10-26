@@ -2,13 +2,9 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Author;
-use App\Models\Category;
-use App\Models\Discount;
-use App\Models\Review;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class BookResource extends JsonResource
+class DetailBookResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -18,7 +14,6 @@ class BookResource extends JsonResource
      */
     public function toArray($request)
     {
-
         $sub_price = 0;
         if ($this->discount_price != null){
             if ($this->discount_end_date == null || $this->discount_end_date >= now()->format('Y-m-d')){
@@ -48,10 +43,8 @@ class BookResource extends JsonResource
             'discount_end_date' => $this->discount_end_date,
             'book_cover_photo' => $this->book_cover_photo,
             'review_count' => $this->reviews_count,
-            // 'reviews' => $this->reviews,
             'avg_star' => $this->avg_star,
+            // 'reviews' => $this->reviews,
         ];
-
-        // 'reviews'=> ReviewResource::collection(Review::all()->where('book_id','=',$this->id))
     }
 }

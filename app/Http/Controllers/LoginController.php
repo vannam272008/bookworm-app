@@ -42,7 +42,7 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials)){
             $user = Auth::user();
-            return response()->json($user);
+            return response()->json([$user,'login success']);
         }
         return response()->json('Login failed: Invalid username or password', 422);
     }
@@ -102,9 +102,9 @@ class LoginController extends Controller
         ]);
 
         if (Auth::attempt( $credentials)) {
-            $user =  $request -> Auth::user();
+            $user =  Auth::user();
             $user-> access_token = $user -> createToken("API_TOKEN")->plainTextToken;
-            return response()->json([$user]);
+            return response()->json(['Login Success',$user]);
         }
         return response()->json('Login failed: Invalid username or password.', 422);
     }
@@ -112,6 +112,6 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         $request -> auth() -> user() -> tokens() -> delete();
-        return response()->json('', 204);
+        return response()->json('logout success!', 204);
     }
 }
