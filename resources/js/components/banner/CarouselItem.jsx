@@ -2,14 +2,30 @@ import React from 'react'
 import imgBook from "../../../assets/bookcover/book1.jpg";
 import { Carousel, Col, Row , Card, Button} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {faCaretLeft, faCaretRight} from '@fortawesome/free-solid-svg-icons'
 
 const CarouselItem = () => {
   return (
     <Carousel 
         prevLabel={""}
         nextLabel={""}
-        prevIcon=<FontAwesomeIcon icon="fa-sharp fa-solid fa-caret-left" />
-        nextIcon=<FontAwesomeIcon icon="fa-sharp fa-solid fa-caret-right" />
+        prevIcon=
+        {
+            <FontAwesomeIcon
+                icon={faCaretLeft}
+                size='6x'
+                className='icon-banner'
+            />
+        }
+        nextIcon=
+        {
+            <FontAwesomeIcon
+                icon={faCaretRight}
+                size='6x'
+                className='icon-banner'
+            />
+        }
+        
     >
     
       <Carousel.Item>
@@ -23,7 +39,7 @@ const CarouselItem = () => {
             Some quick example text to build on the card title and make up the
             bulk of the card's content.
             </Card.Text>
-            <Button variant="primary">Go somewhere</Button>
+            <Card.Text>Price</Card.Text>
         </Card.Body>
         </Card>
       </Col>
@@ -37,7 +53,7 @@ const CarouselItem = () => {
             Some quick example text to build on the card title and make up the
             bulk of the card's content.
             </Card.Text>
-            <Button variant="primary">Go somewhere</Button>
+            <Card.Text>Price</Card.Text>
         </Card.Body>
         </Card>
       </Col>
@@ -51,7 +67,7 @@ const CarouselItem = () => {
             Some quick example text to build on the card title and make up the
             bulk of the card's content.
             </Card.Text>
-            <Button variant="primary">Go somewhere</Button>
+            <Card.Text>Price</Card.Text>
         </Card.Body>
         </Card>
       </Col>
@@ -64,7 +80,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -83,7 +99,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -96,7 +112,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -109,7 +125,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -122,7 +138,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -141,7 +157,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -155,7 +171,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -168,7 +184,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>
@@ -181,7 +197,7 @@ const CarouselItem = () => {
                 Some quick example text to build on the card title and make up the
                 bulk of the card's content.
                 </Card.Text>
-                <Button variant="primary">Go somewhere</Button>
+                <Card.Text>Price</Card.Text>
             </Card.Body>
         </Card>
       </Col>

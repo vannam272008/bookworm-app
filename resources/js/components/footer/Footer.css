@@ -1,0 +1,19 @@
+footer {
+    width: 100%;
+}
+
+footer .navbar-brand {
+    margin-left: 15px;
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    align-items: center;
+}
+
+footer .information-website {
+    margin-left: 10px;
+    font-size: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}

@@ -1,0 +1,22 @@
+.feature-select {
+    margin-top: 80px;
+}
+
+.feature-select .btn-featured-books {
+    text-align: center;
+}
+
+.feature-select .card-items {
+    padding: 20px 115px 20px 115px;
+    margin-top: 10px;
+    border: 1px solid black;
+}
+
+.feature-select .popular {
+    padding-left: 35px;
+    padding-right: 35px;
+}
+
+.feature-select .row-card-items{
+    margin-top: 20px;
+}
