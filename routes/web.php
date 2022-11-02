@@ -1,8 +1,9 @@
 <?php
 
-use App\Http\Controllers\BookAPIController;
+use App\Http\Controllers\BookApiController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\ReviewBookApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,18 +18,25 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('react');
-});
+    return view('welcome');
+})->where('path', '[a-zA-Z0-9-/]+');
 
 // // Route::get('books',[
-// //     BookAPIController::class,"index"
+// //     BookApiController::class,"index"
 // // ]);
 
-// Route::post('session', [LoginController::class, 'store'])->name('login');
-// Route::delete('session', [LoginController::class, 'destroy'])->name('logout');
+Route::post('session', [LoginController::class, 'store'])->name('login');
+Route::delete('session', [LoginController::class, 'destroy'])->name('logout');
 
-// // Route::prefix('admin')->group(function () {
-// //     Route::name('admin.')->group(function () {
-// //         Route::resource('books', BookController::class);
-// //     });
-// // });
+
+Route::prefix('admin')->group(function () {
+    Route::name('admin.')->group(function () {
+        // Route::get('books/filter',[BookApiController::class,'filter']);
+        // Route::get('books/sort', [BookApiController::class,'sort']);
+        // Route::get('books/{book}/reviews/filter', [BookApiController::class, 'filter']);
+        // Route::resource('books', BookApiController::class);
+        // Route::resource('reviews',ReviewBookApiController::class);
+        // Route::resource('books.reviews',ReviewBookApiController::class);
+    });
+    
+});

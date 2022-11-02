@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\BookAPIController;
-use App\Http\Controllers\BookController;
-use App\Http\Controllers\CategoryApiController;
+use App\Http\Controllers\BookApiController;
+use App\Http\Controllers\FilterApiController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\ReviewApiController;
+use App\Http\Controllers\OrderApiController;
+use App\Http\Controllers\ReviewBookApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -23,18 +23,19 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('session', [LoginController::class, 'login'])->name('api.login');
-// Route::post('session', [LoginController::class, 'store'])->name('login');
-// Route::delete('session', [LoginController::class, 'destroy'])->name('logout');
-// Route::apiResource('books', BookAPIController::class);
-// // Route::get('books', BookController::class);
-Route::get('books/filter',[BookAPIController::class,'filter']);
-Route::get('books/sort', [BookAPIController::class,'sort']);
-Route::apiResource('books', BookAPIController::class);
-Route::apiResource('reviews',ReviewApiController::class);
+Route::post('login', [LoginController::class, 'login'])->name('api.login');
+Route::get('books/{book}/reviews/filter',[ReviewBookApiController::class, 'filter']);
+Route::get('books/filter',[BookApiController::class,'filter']);
+Route::get('books/sort', [BookApiController::class,'sort']);
+Route::apiResource('books/{book}/reviews',ReviewBookApiController::class);
+Route::apiResource('books', BookApiController::class);
+Route::apiResource('filters',FilterApiController::class)->only('index');
+Route::apiResource('orders',OrderApiController::class)->only('index');
+
 Route::middleware(['auth:sanctum'])->group(function () {
+    // Route::apiResource('books', BookApiController::class);
     
-    // Route::apiResource('books',BookAPIController::class,'sortByPriceASC');
-    Route::delete('session', [LoginController::class, 'logout'])->name('api.logout');
+    
+    Route::delete('login', [LoginController::class, 'logout'])->name('api.logout');
 });
 

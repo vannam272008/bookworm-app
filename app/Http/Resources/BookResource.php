@@ -2,10 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Author;
-use App\Models\Category;
-use App\Models\Discount;
-use App\Models\Review;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BookResource extends JsonResource
@@ -41,9 +37,9 @@ class BookResource extends JsonResource
             'author' => $this->author,
             'book_title' => $this->book_title,
             'book_summary' => $this->book_summary,
-            'book_price' => (float)$this->book_price,
+            'book_price' => $this->book_price,
             'sub_price' => $sub_price,
-            'final_price' => (float)$final_price,
+            'final_price' => $final_price,
             'discount_start_date' => $this->discount_start_date,
             'discount_end_date' => $this->discount_end_date,
             'book_cover_photo' => $this->book_cover_photo,

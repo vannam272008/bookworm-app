@@ -40,21 +40,5 @@ class Book extends Model
         ->select('book.*','discount.discount_price','discount.discount_start_date','discount.discount_end_date')
         ->withCount('reviews');
     }
-
-    
-
-    // public function scopePopular($query){
-    //     return $query
-    //     ->leftJoin('discount','discount.book_id','=','book.id')
-    //     ->groupBy('book.id','discount.id')
-    //     ->withCount('reviews');
-    // }
-
-    // public function scopeFilterBy($query){
-    //     return $query
-    //     ->leftJoin('discount','discount.book_id','=','book.id')
-    //     ->groupBy('book.id','discount.id')
-    //     ->withCount('reviews');
-    // }
     
 }

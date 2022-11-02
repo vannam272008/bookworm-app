@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Repositories\Interfaces\BookRepositoryInterface;
 use App\Repositories\BookRepository;
+use App\Repositories\ReviewBookRepository;
+use App\Repositories\Interfaces\ReviewBookRepositoryInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->bind(BookRepositoryInterface::class, BookRepository::class);
+        $this->app->bind(ReviewBookRepositoryInterface::class, ReviewBookRepository::class);
     }
 
     /**

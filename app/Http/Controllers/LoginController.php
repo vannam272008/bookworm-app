@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -33,12 +34,13 @@ class LoginController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(LoginRequest $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required'],
-        ]);
+        // $credentials = $request->validate([
+        //     'email' => ['required','email'],
+        //     'password' => ['required'],
+        // ]);
+        $request->validated($request->all());
 
         if (Auth::attempt($credentials)){
             $user = Auth::user();
@@ -95,11 +97,13 @@ class LoginController extends Controller
         return response('Token deleted successed!',204);
     }
     
-    public function login(Request $request){
-        $credentials = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required'],
-        ]);
+    public function login(LoginRequest $request){
+        // $credentials = $request->validate([
+        //     'email' => ['required','email'],
+        //     'password' => ['required'],
+        // ]);
+
+        $request->validated($request->all());
 
         if (Auth::attempt( $credentials)) {
             $user =  Auth::user();

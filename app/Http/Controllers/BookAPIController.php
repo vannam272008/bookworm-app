@@ -6,13 +6,11 @@ use App\Http\Resources\BookCollection;
 use App\Http\Resources\BookResource;
 use Illuminate\Http\Request;
 use App\Models\Book;
-use App\Models\Category;
-use App\Models\Review;
-use Illuminate\Support\Facades\Redis;
 use App\Repositories\BookRepository;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
-class BookAPIController extends Controller
+class BookApiController extends Controller
 {
 
     private $bookRepository;
@@ -28,18 +26,21 @@ class BookAPIController extends Controller
      */
     public function index(Request $request)
     {
-        
-        $query = Book::group();
-        $query = new BookCollection($query->paginate(5));
-        return response()->json($query, Response::HTTP_OK);
+        $books = Book::group()->get();
+        // $books = new BookCollection($books);
+        return new BookCollection($books);
+        // return response()->json($books, Response::HTTP_OK);
     }
+
 
     public function filter(Request $request){
         try {
-            $query = Book::group();
-            $query = $this->bookRepository->filter($query, $request);
-            return new BookCollection($query);
-        } catch (\Throwable $th){
+            $books = Book::group();
+            $books = $this->bookRepository->filter($books, $request);
+            // $books = new BookCollection($books);
+            return new BookCollection($books);
+            // return response()->json($books,Response::HTTP_OK);
+        } catch (Throwable $t){
             return response()->json([
                 'error' => 'Server Error'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -51,8 +52,12 @@ class BookAPIController extends Controller
         try {
             $books = Book::group();
             $books = $this->bookRepository->sortFeaturedBooks($books, $request);
+            // $books = new BookCollection($books);
             return new BookCollection($books);
-        } catch (\Throwable $th){
+            // return response()->json(
+            //     ['books' => $books],
+            //     Response::HTTP_OK);
+        } catch (Throwable $t){
             return response()->json([
                 'error' => 'Server Error'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -68,6 +73,20 @@ class BookAPIController extends Controller
      */
     public function show($id)
     {
-        return $this->bookRepository->getById($id);
+        try {
+            $book = Book::group()
+            ->selectRaw('COALESCE(ROUND(AVG(CAST(rating_start as INT)),2),0) as avg_stars')
+            ->findOrFail($id);
+            return new BookResource($book);
+            // $book = new BookResource($book);
+            // return response()->json(
+            //     ['book' => $book],
+            //     Response::HTTP_OK);
+        } catch (Throwable $t){
+            return response()->json([
+                'error' => 'Server Error'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        
     }
 }

@@ -1,4 +1,5 @@
 const mix = require('laravel-mix');
+// require('laravel-mix-eslint');
 
 /*
  |--------------------------------------------------------------------------
@@ -13,3 +14,15 @@ const mix = require('laravel-mix');
 
 mix.sass('resources/css/app.scss', 'public/css');
 mix.js('resources/js/app.jsx', 'public/js').react();
+
+// 
+// mix.sass('resources/css/app.scss', 'public/css')
+// mix
+//   .js('resources/js/app.jsx', 'public/js')
+//   .react()
+//   .extract(['react'])
+//   .sourceMaps()
+
+// if (mix.inProduction()) {
+//   mix.version()
+// }
