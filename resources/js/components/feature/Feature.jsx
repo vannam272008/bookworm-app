@@ -1,8 +1,8 @@
 import React from 'react'
 import { Button, ButtonGroup, Container } from 'react-bootstrap'
 import { Col, Row} from 'react-bootstrap';
-import "./Feature.css"
 import Item from '../item/Item';
+import "./Feature.css"
 
 const Feature = () => {
 

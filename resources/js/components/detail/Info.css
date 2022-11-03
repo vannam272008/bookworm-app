@@ -1,0 +1,21 @@
+.row-book-detail {
+    border: 3px solid rgb(234, 226, 226);
+    margin-left: 0.5px;
+}
+
+.col-img {
+    padding: 0;
+}
+
+.col-img img {
+    height: 220px;
+    width: 200px;
+}
+
+.col-img .col-span {
+    padding-right: 10px;
+    font-size: 0.8rem;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    float: right;
+}

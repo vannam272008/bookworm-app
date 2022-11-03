@@ -31,18 +31,19 @@
     text-decoration: line-through;
 }
 
-.quantity {
+.tbody .quantity {
     padding-top: 60px;
     padding-left: 10px;
 }
 
-.quantity button{
+.tbody .quantity button{
     border: none;
-    padding: 5px 10px 10px 10px;
+    padding: 7px 10px 7px 10px;
     background: rgb(217, 226, 226);
 }
-.quantity span{
-    padding: 5.8px 10px 11.5px 10px;
+
+.tbody .quantity span{
+    padding: 7.5px 10px 9px 10px;
     background-color: rgb(217, 226, 226);
 }
 

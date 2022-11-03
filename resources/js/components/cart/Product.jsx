@@ -1,7 +1,9 @@
 import React from 'react'
-import { Button, Card, Table } from 'react-bootstrap'
+import { Table } from 'react-bootstrap'
 import "./Product.css"
 import CartItem from './CartItem'
+import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 const Product = () => {
   return (
@@ -24,11 +26,24 @@ const Product = () => {
                 <a>$49.99</a>
             </td>
             <td>
-                <div className='quantity'>
-                    <button className='sub'>-</button>
-                    <span>2</span>
-                    <button className='plus'>+</button>
-                </div>
+            <div className='quantity'>
+                <button className='sub'>
+                    <FontAwesomeIcon
+                        icon={faMinus}
+                        size='1x'
+                        className='icon-sub'
+                    />
+                </button>
+                <span><b>1</b></span>
+                <button className='plus'>
+                    <FontAwesomeIcon
+                        icon={faPlus}
+                        size='1x'
+                        className='icon-plus'
+                    />
+                </button>
+            </div>
+                
             </td>
             <td>
                 <h5><b>$59.98</b></h5>
@@ -44,11 +59,23 @@ const Product = () => {
                 <a>$49.99</a>
             </td>
             <td>
-                <div className='quantity'>
-                    <button className='sub'>-</button>
-                    <span>2</span>
-                    <button className='plus'>+</button>
-                </div>
+            <div className='quantity'>
+                <button className='sub'>
+                    <FontAwesomeIcon
+                        icon={faMinus}
+                        size='1x'
+                        className='icon-sub'
+                    />
+                </button>
+                <span><b>1</b></span>
+                <button className='plus'>
+                    <FontAwesomeIcon
+                        icon={faPlus}
+                        size='1x'
+                        className='icon-plus'
+                    />
+                </button>
+            </div>
             </td>
             <td>
                 <h5><b>$59.98</b></h5>
