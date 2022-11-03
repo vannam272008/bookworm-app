@@ -5,10 +5,7 @@ import rootReducer from './reducers'
 import { createStore, applyMiddleware } from 'redux'
 import thunk from 'redux-thunk'
 import { Provider } from 'react-redux'
-import HomePage from './pages/HomePage'
-import Footer from './components/footer/Footer'
-import Header from './components/header/Header'
-import ShopPage from './pages/ShopPage'
+import App from './index'
 
 
 // const store = createStore(rootReducer, applyMiddleware(thunk))
@@ -16,12 +13,16 @@ import {
   BrowserRouter as Router,
   Switch,
   Route,
-  Link
+  Link,
+  BrowserRouter
 } from "react-router-dom";
+
 
 ReactDOM.render(
   // <Provider store={store}>
-  
+  <BrowserRouter>
+    <App/>
+  </BrowserRouter>,
   
 
   // </Provider>,

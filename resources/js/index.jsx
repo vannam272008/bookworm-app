@@ -4,20 +4,19 @@ import Header from './components/header/Header'
 import HomePage from './pages/HomePage'
 import ShopPage from './pages/ShopPage'
 import {
-    BrowserRouter,
     Routes,
     Route,
   } from "react-router-dom";
 
 
-const index = () => {
+const App = () => {
   return (
     <Routes>
-      <Route path="/" element={<Home />}/>
-      <Route path="/shop" element={<Shop />}/>
-      <Route path="/about" element={<About />}/>
-      <Route path="/cart" element={<Cart />}/>
+      <Route path="/" element={<ShopPage />}/>
+      <Route path="/shop" element={<ShopPage />}/>
+      {/* <Route path="/about" element={<About />}/>
+      <Route path="/cart" element={<Cart />}/> */}
     </Routes>
   )
 }
-export default index
+export default App

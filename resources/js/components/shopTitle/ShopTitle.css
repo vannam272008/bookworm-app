@@ -1,0 +1,8 @@
+div.wrapper-about .main-title-information {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+}
+div.main-title div.main-title-information .main-title-information-1 {
+    font-size: 1.5rem !important;
+}

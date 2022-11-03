@@ -448,6 +448,6390 @@ var convertCurry = convert.bind(null, react__WEBPACK_IMPORTED_MODULE_1__.createE
 
 /***/ }),
 
+/***/ "./node_modules/@popperjs/core/lib/createPopper.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/createPopper.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "createPopper": () => (/* binding */ createPopper),
+/* harmony export */   "detectOverflow": () => (/* reexport safe */ _utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_13__["default"]),
+/* harmony export */   "popperGenerator": () => (/* binding */ popperGenerator)
+/* harmony export */ });
+/* harmony import */ var _dom_utils_getCompositeRect_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./dom-utils/getCompositeRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getCompositeRect.js");
+/* harmony import */ var _dom_utils_getLayoutRect_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./dom-utils/getLayoutRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getLayoutRect.js");
+/* harmony import */ var _dom_utils_listScrollParents_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./dom-utils/listScrollParents.js */ "./node_modules/@popperjs/core/lib/dom-utils/listScrollParents.js");
+/* harmony import */ var _dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./dom-utils/getOffsetParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/getOffsetParent.js");
+/* harmony import */ var _dom_utils_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./dom-utils/getComputedStyle.js */ "./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js");
+/* harmony import */ var _utils_orderModifiers_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./utils/orderModifiers.js */ "./node_modules/@popperjs/core/lib/utils/orderModifiers.js");
+/* harmony import */ var _utils_debounce_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./utils/debounce.js */ "./node_modules/@popperjs/core/lib/utils/debounce.js");
+/* harmony import */ var _utils_validateModifiers_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./utils/validateModifiers.js */ "./node_modules/@popperjs/core/lib/utils/validateModifiers.js");
+/* harmony import */ var _utils_uniqueBy_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./utils/uniqueBy.js */ "./node_modules/@popperjs/core/lib/utils/uniqueBy.js");
+/* harmony import */ var _utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./utils/getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+/* harmony import */ var _utils_mergeByName_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./utils/mergeByName.js */ "./node_modules/@popperjs/core/lib/utils/mergeByName.js");
+/* harmony import */ var _utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./utils/detectOverflow.js */ "./node_modules/@popperjs/core/lib/utils/detectOverflow.js");
+/* harmony import */ var _dom_utils_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./dom-utils/instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var INVALID_ELEMENT_ERROR = 'Popper: Invalid reference or popper argument provided. They must be either a DOM element or virtual element.';
+var INFINITE_LOOP_ERROR = 'Popper: An infinite loop in the modifiers cycle has been detected! The cycle has been interrupted to prevent a browser crash.';
+var DEFAULT_OPTIONS = {
+  placement: 'bottom',
+  modifiers: [],
+  strategy: 'absolute'
+};
+
+function areValidElements() {
+  for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  return !args.some(function (element) {
+    return !(element && typeof element.getBoundingClientRect === 'function');
+  });
+}
+
+function popperGenerator(generatorOptions) {
+  if (generatorOptions === void 0) {
+    generatorOptions = {};
+  }
+
+  var _generatorOptions = generatorOptions,
+      _generatorOptions$def = _generatorOptions.defaultModifiers,
+      defaultModifiers = _generatorOptions$def === void 0 ? [] : _generatorOptions$def,
+      _generatorOptions$def2 = _generatorOptions.defaultOptions,
+      defaultOptions = _generatorOptions$def2 === void 0 ? DEFAULT_OPTIONS : _generatorOptions$def2;
+  return function createPopper(reference, popper, options) {
+    if (options === void 0) {
+      options = defaultOptions;
+    }
+
+    var state = {
+      placement: 'bottom',
+      orderedModifiers: [],
+      options: Object.assign({}, DEFAULT_OPTIONS, defaultOptions),
+      modifiersData: {},
+      elements: {
+        reference: reference,
+        popper: popper
+      },
+      attributes: {},
+      styles: {}
+    };
+    var effectCleanupFns = [];
+    var isDestroyed = false;
+    var instance = {
+      state: state,
+      setOptions: function setOptions(setOptionsAction) {
+        var options = typeof setOptionsAction === 'function' ? setOptionsAction(state.options) : setOptionsAction;
+        cleanupModifierEffects();
+        state.options = Object.assign({}, defaultOptions, state.options, options);
+        state.scrollParents = {
+          reference: (0,_dom_utils_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isElement)(reference) ? (0,_dom_utils_listScrollParents_js__WEBPACK_IMPORTED_MODULE_1__["default"])(reference) : reference.contextElement ? (0,_dom_utils_listScrollParents_js__WEBPACK_IMPORTED_MODULE_1__["default"])(reference.contextElement) : [],
+          popper: (0,_dom_utils_listScrollParents_js__WEBPACK_IMPORTED_MODULE_1__["default"])(popper)
+        }; // Orders the modifiers based on their dependencies and `phase`
+        // properties
+
+        var orderedModifiers = (0,_utils_orderModifiers_js__WEBPACK_IMPORTED_MODULE_2__["default"])((0,_utils_mergeByName_js__WEBPACK_IMPORTED_MODULE_3__["default"])([].concat(defaultModifiers, state.options.modifiers))); // Strip out disabled modifiers
+
+        state.orderedModifiers = orderedModifiers.filter(function (m) {
+          return m.enabled;
+        }); // Validate the provided modifiers so that the consumer will get warned
+        // if one of the modifiers is invalid for any reason
+
+        if (true) {
+          var modifiers = (0,_utils_uniqueBy_js__WEBPACK_IMPORTED_MODULE_4__["default"])([].concat(orderedModifiers, state.options.modifiers), function (_ref) {
+            var name = _ref.name;
+            return name;
+          });
+          (0,_utils_validateModifiers_js__WEBPACK_IMPORTED_MODULE_5__["default"])(modifiers);
+
+          if ((0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_6__["default"])(state.options.placement) === _enums_js__WEBPACK_IMPORTED_MODULE_7__.auto) {
+            var flipModifier = state.orderedModifiers.find(function (_ref2) {
+              var name = _ref2.name;
+              return name === 'flip';
+            });
+
+            if (!flipModifier) {
+              console.error(['Popper: "auto" placements require the "flip" modifier be', 'present and enabled to work.'].join(' '));
+            }
+          }
+
+          var _getComputedStyle = (0,_dom_utils_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_8__["default"])(popper),
+              marginTop = _getComputedStyle.marginTop,
+              marginRight = _getComputedStyle.marginRight,
+              marginBottom = _getComputedStyle.marginBottom,
+              marginLeft = _getComputedStyle.marginLeft; // We no longer take into account `margins` on the popper, and it can
+          // cause bugs with positioning, so we'll warn the consumer
+
+
+          if ([marginTop, marginRight, marginBottom, marginLeft].some(function (margin) {
+            return parseFloat(margin);
+          })) {
+            console.warn(['Popper: CSS "margin" styles cannot be used to apply padding', 'between the popper and its reference element or boundary.', 'To replicate margin, use the `offset` modifier, as well as', 'the `padding` option in the `preventOverflow` and `flip`', 'modifiers.'].join(' '));
+          }
+        }
+
+        runModifierEffects();
+        return instance.update();
+      },
+      // Sync update – it will always be executed, even if not necessary. This
+      // is useful for low frequency updates where sync behavior simplifies the
+      // logic.
+      // For high frequency updates (e.g. `resize` and `scroll` events), always
+      // prefer the async Popper#update method
+      forceUpdate: function forceUpdate() {
+        if (isDestroyed) {
+          return;
+        }
+
+        var _state$elements = state.elements,
+            reference = _state$elements.reference,
+            popper = _state$elements.popper; // Don't proceed if `reference` or `popper` are not valid elements
+        // anymore
+
+        if (!areValidElements(reference, popper)) {
+          if (true) {
+            console.error(INVALID_ELEMENT_ERROR);
+          }
+
+          return;
+        } // Store the reference and popper rects to be read by modifiers
+
+
+        state.rects = {
+          reference: (0,_dom_utils_getCompositeRect_js__WEBPACK_IMPORTED_MODULE_9__["default"])(reference, (0,_dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_10__["default"])(popper), state.options.strategy === 'fixed'),
+          popper: (0,_dom_utils_getLayoutRect_js__WEBPACK_IMPORTED_MODULE_11__["default"])(popper)
+        }; // Modifiers have the ability to reset the current update cycle. The
+        // most common use case for this is the `flip` modifier changing the
+        // placement, which then needs to re-run all the modifiers, because the
+        // logic was previously ran for the previous placement and is therefore
+        // stale/incorrect
+
+        state.reset = false;
+        state.placement = state.options.placement; // On each update cycle, the `modifiersData` property for each modifier
+        // is filled with the initial data specified by the modifier. This means
+        // it doesn't persist and is fresh on each update.
+        // To ensure persistent data, use `${name}#persistent`
+
+        state.orderedModifiers.forEach(function (modifier) {
+          return state.modifiersData[modifier.name] = Object.assign({}, modifier.data);
+        });
+        var __debug_loops__ = 0;
+
+        for (var index = 0; index < state.orderedModifiers.length; index++) {
+          if (true) {
+            __debug_loops__ += 1;
+
+            if (__debug_loops__ > 100) {
+              console.error(INFINITE_LOOP_ERROR);
+              break;
+            }
+          }
+
+          if (state.reset === true) {
+            state.reset = false;
+            index = -1;
+            continue;
+          }
+
+          var _state$orderedModifie = state.orderedModifiers[index],
+              fn = _state$orderedModifie.fn,
+              _state$orderedModifie2 = _state$orderedModifie.options,
+              _options = _state$orderedModifie2 === void 0 ? {} : _state$orderedModifie2,
+              name = _state$orderedModifie.name;
+
+          if (typeof fn === 'function') {
+            state = fn({
+              state: state,
+              options: _options,
+              name: name,
+              instance: instance
+            }) || state;
+          }
+        }
+      },
+      // Async and optimistically optimized update – it will not be executed if
+      // not necessary (debounced to run at most once-per-tick)
+      update: (0,_utils_debounce_js__WEBPACK_IMPORTED_MODULE_12__["default"])(function () {
+        return new Promise(function (resolve) {
+          instance.forceUpdate();
+          resolve(state);
+        });
+      }),
+      destroy: function destroy() {
+        cleanupModifierEffects();
+        isDestroyed = true;
+      }
+    };
+
+    if (!areValidElements(reference, popper)) {
+      if (true) {
+        console.error(INVALID_ELEMENT_ERROR);
+      }
+
+      return instance;
+    }
+
+    instance.setOptions(options).then(function (state) {
+      if (!isDestroyed && options.onFirstUpdate) {
+        options.onFirstUpdate(state);
+      }
+    }); // Modifiers have the ability to execute arbitrary code before the first
+    // update cycle runs. They will be executed in the same order as the update
+    // cycle. This is useful when a modifier adds some persistent data that
+    // other modifiers need to use, but the modifier is run after the dependent
+    // one.
+
+    function runModifierEffects() {
+      state.orderedModifiers.forEach(function (_ref3) {
+        var name = _ref3.name,
+            _ref3$options = _ref3.options,
+            options = _ref3$options === void 0 ? {} : _ref3$options,
+            effect = _ref3.effect;
+
+        if (typeof effect === 'function') {
+          var cleanupFn = effect({
+            state: state,
+            name: name,
+            instance: instance,
+            options: options
+          });
+
+          var noopFn = function noopFn() {};
+
+          effectCleanupFns.push(cleanupFn || noopFn);
+        }
+      });
+    }
+
+    function cleanupModifierEffects() {
+      effectCleanupFns.forEach(function (fn) {
+        return fn();
+      });
+      effectCleanupFns = [];
+    }
+
+    return instance;
+  };
+}
+var createPopper = /*#__PURE__*/popperGenerator(); // eslint-disable-next-line import/no-unused-modules
+
+
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/contains.js":
+/*!***************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/contains.js ***!
+  \***************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ contains)
+/* harmony export */ });
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+
+function contains(parent, child) {
+  var rootNode = child.getRootNode && child.getRootNode(); // First, attempt with faster native method
+
+  if (parent.contains(child)) {
+    return true;
+  } // then fallback to custom implementation with Shadow DOM support
+  else if (rootNode && (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isShadowRoot)(rootNode)) {
+      var next = child;
+
+      do {
+        if (next && parent.isSameNode(next)) {
+          return true;
+        } // $FlowFixMe[prop-missing]: need a better way to handle this...
+
+
+        next = next.parentNode || next.host;
+      } while (next);
+    } // Give up, the result is false
+
+
+  return false;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getBoundingClientRect.js":
+/*!****************************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getBoundingClientRect.js ***!
+  \****************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getBoundingClientRect)
+/* harmony export */ });
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+/* harmony import */ var _utils_math_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/math.js */ "./node_modules/@popperjs/core/lib/utils/math.js");
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+/* harmony import */ var _isLayoutViewport_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./isLayoutViewport.js */ "./node_modules/@popperjs/core/lib/dom-utils/isLayoutViewport.js");
+
+
+
+
+function getBoundingClientRect(element, includeScale, isFixedStrategy) {
+  if (includeScale === void 0) {
+    includeScale = false;
+  }
+
+  if (isFixedStrategy === void 0) {
+    isFixedStrategy = false;
+  }
+
+  var clientRect = element.getBoundingClientRect();
+  var scaleX = 1;
+  var scaleY = 1;
+
+  if (includeScale && (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(element)) {
+    scaleX = element.offsetWidth > 0 ? (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_1__.round)(clientRect.width) / element.offsetWidth || 1 : 1;
+    scaleY = element.offsetHeight > 0 ? (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_1__.round)(clientRect.height) / element.offsetHeight || 1 : 1;
+  }
+
+  var _ref = (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isElement)(element) ? (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_2__["default"])(element) : window,
+      visualViewport = _ref.visualViewport;
+
+  var addVisualOffsets = !(0,_isLayoutViewport_js__WEBPACK_IMPORTED_MODULE_3__["default"])() && isFixedStrategy;
+  var x = (clientRect.left + (addVisualOffsets && visualViewport ? visualViewport.offsetLeft : 0)) / scaleX;
+  var y = (clientRect.top + (addVisualOffsets && visualViewport ? visualViewport.offsetTop : 0)) / scaleY;
+  var width = clientRect.width / scaleX;
+  var height = clientRect.height / scaleY;
+  return {
+    width: width,
+    height: height,
+    top: y,
+    right: x + width,
+    bottom: y + height,
+    left: x,
+    x: x,
+    y: y
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getClippingRect.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getClippingRect.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getClippingRect)
+/* harmony export */ });
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _getViewportRect_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getViewportRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getViewportRect.js");
+/* harmony import */ var _getDocumentRect_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./getDocumentRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentRect.js");
+/* harmony import */ var _listScrollParents_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./listScrollParents.js */ "./node_modules/@popperjs/core/lib/dom-utils/listScrollParents.js");
+/* harmony import */ var _getOffsetParent_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./getOffsetParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/getOffsetParent.js");
+/* harmony import */ var _getDocumentElement_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _getComputedStyle_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./getComputedStyle.js */ "./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js");
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+/* harmony import */ var _getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getBoundingClientRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getBoundingClientRect.js");
+/* harmony import */ var _getParentNode_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./getParentNode.js */ "./node_modules/@popperjs/core/lib/dom-utils/getParentNode.js");
+/* harmony import */ var _contains_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./contains.js */ "./node_modules/@popperjs/core/lib/dom-utils/contains.js");
+/* harmony import */ var _getNodeName_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./getNodeName.js */ "./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js");
+/* harmony import */ var _utils_rectToClientRect_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/rectToClientRect.js */ "./node_modules/@popperjs/core/lib/utils/rectToClientRect.js");
+/* harmony import */ var _utils_math_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../utils/math.js */ "./node_modules/@popperjs/core/lib/utils/math.js");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function getInnerBoundingClientRect(element, strategy) {
+  var rect = (0,_getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element, false, strategy === 'fixed');
+  rect.top = rect.top + element.clientTop;
+  rect.left = rect.left + element.clientLeft;
+  rect.bottom = rect.top + element.clientHeight;
+  rect.right = rect.left + element.clientWidth;
+  rect.width = element.clientWidth;
+  rect.height = element.clientHeight;
+  rect.x = rect.left;
+  rect.y = rect.top;
+  return rect;
+}
+
+function getClientRectFromMixedType(element, clippingParent, strategy) {
+  return clippingParent === _enums_js__WEBPACK_IMPORTED_MODULE_1__.viewport ? (0,_utils_rectToClientRect_js__WEBPACK_IMPORTED_MODULE_2__["default"])((0,_getViewportRect_js__WEBPACK_IMPORTED_MODULE_3__["default"])(element, strategy)) : (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_4__.isElement)(clippingParent) ? getInnerBoundingClientRect(clippingParent, strategy) : (0,_utils_rectToClientRect_js__WEBPACK_IMPORTED_MODULE_2__["default"])((0,_getDocumentRect_js__WEBPACK_IMPORTED_MODULE_5__["default"])((0,_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_6__["default"])(element)));
+} // A "clipping parent" is an overflowable container with the characteristic of
+// clipping (or hiding) overflowing elements with a position different from
+// `initial`
+
+
+function getClippingParents(element) {
+  var clippingParents = (0,_listScrollParents_js__WEBPACK_IMPORTED_MODULE_7__["default"])((0,_getParentNode_js__WEBPACK_IMPORTED_MODULE_8__["default"])(element));
+  var canEscapeClipping = ['absolute', 'fixed'].indexOf((0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_9__["default"])(element).position) >= 0;
+  var clipperElement = canEscapeClipping && (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_4__.isHTMLElement)(element) ? (0,_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_10__["default"])(element) : element;
+
+  if (!(0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_4__.isElement)(clipperElement)) {
+    return [];
+  } // $FlowFixMe[incompatible-return]: https://github.com/facebook/flow/issues/1414
+
+
+  return clippingParents.filter(function (clippingParent) {
+    return (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_4__.isElement)(clippingParent) && (0,_contains_js__WEBPACK_IMPORTED_MODULE_11__["default"])(clippingParent, clipperElement) && (0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_12__["default"])(clippingParent) !== 'body';
+  });
+} // Gets the maximum area that the element is visible in due to any number of
+// clipping parents
+
+
+function getClippingRect(element, boundary, rootBoundary, strategy) {
+  var mainClippingParents = boundary === 'clippingParents' ? getClippingParents(element) : [].concat(boundary);
+  var clippingParents = [].concat(mainClippingParents, [rootBoundary]);
+  var firstClippingParent = clippingParents[0];
+  var clippingRect = clippingParents.reduce(function (accRect, clippingParent) {
+    var rect = getClientRectFromMixedType(element, clippingParent, strategy);
+    accRect.top = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_13__.max)(rect.top, accRect.top);
+    accRect.right = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_13__.min)(rect.right, accRect.right);
+    accRect.bottom = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_13__.min)(rect.bottom, accRect.bottom);
+    accRect.left = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_13__.max)(rect.left, accRect.left);
+    return accRect;
+  }, getClientRectFromMixedType(element, firstClippingParent, strategy));
+  clippingRect.width = clippingRect.right - clippingRect.left;
+  clippingRect.height = clippingRect.bottom - clippingRect.top;
+  clippingRect.x = clippingRect.left;
+  clippingRect.y = clippingRect.top;
+  return clippingRect;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getCompositeRect.js":
+/*!***********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getCompositeRect.js ***!
+  \***********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getCompositeRect)
+/* harmony export */ });
+/* harmony import */ var _getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getBoundingClientRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getBoundingClientRect.js");
+/* harmony import */ var _getNodeScroll_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./getNodeScroll.js */ "./node_modules/@popperjs/core/lib/dom-utils/getNodeScroll.js");
+/* harmony import */ var _getNodeName_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./getNodeName.js */ "./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js");
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+/* harmony import */ var _getWindowScrollBarX_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./getWindowScrollBarX.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScrollBarX.js");
+/* harmony import */ var _getDocumentElement_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _isScrollParent_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./isScrollParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/isScrollParent.js");
+/* harmony import */ var _utils_math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/math.js */ "./node_modules/@popperjs/core/lib/utils/math.js");
+
+
+
+
+
+
+
+
+
+function isElementScaled(element) {
+  var rect = element.getBoundingClientRect();
+  var scaleX = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_0__.round)(rect.width) / element.offsetWidth || 1;
+  var scaleY = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_0__.round)(rect.height) / element.offsetHeight || 1;
+  return scaleX !== 1 || scaleY !== 1;
+} // Returns the composite rect of an element relative to its offsetParent.
+// Composite means it takes into account transforms as well as layout.
+
+
+function getCompositeRect(elementOrVirtualElement, offsetParent, isFixed) {
+  if (isFixed === void 0) {
+    isFixed = false;
+  }
+
+  var isOffsetParentAnElement = (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_1__.isHTMLElement)(offsetParent);
+  var offsetParentIsScaled = (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_1__.isHTMLElement)(offsetParent) && isElementScaled(offsetParent);
+  var documentElement = (0,_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_2__["default"])(offsetParent);
+  var rect = (0,_getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_3__["default"])(elementOrVirtualElement, offsetParentIsScaled, isFixed);
+  var scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  var offsets = {
+    x: 0,
+    y: 0
+  };
+
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if ((0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_4__["default"])(offsetParent) !== 'body' || // https://github.com/popperjs/popper-core/issues/1078
+    (0,_isScrollParent_js__WEBPACK_IMPORTED_MODULE_5__["default"])(documentElement)) {
+      scroll = (0,_getNodeScroll_js__WEBPACK_IMPORTED_MODULE_6__["default"])(offsetParent);
+    }
+
+    if ((0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_1__.isHTMLElement)(offsetParent)) {
+      offsets = (0,_getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_3__["default"])(offsetParent, true);
+      offsets.x += offsetParent.clientLeft;
+      offsets.y += offsetParent.clientTop;
+    } else if (documentElement) {
+      offsets.x = (0,_getWindowScrollBarX_js__WEBPACK_IMPORTED_MODULE_7__["default"])(documentElement);
+    }
+  }
+
+  return {
+    x: rect.left + scroll.scrollLeft - offsets.x,
+    y: rect.top + scroll.scrollTop - offsets.y,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js":
+/*!***********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js ***!
+  \***********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getComputedStyle)
+/* harmony export */ });
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+
+function getComputedStyle(element) {
+  return (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element).getComputedStyle(element);
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js ***!
+  \*************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getDocumentElement)
+/* harmony export */ });
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+
+function getDocumentElement(element) {
+  // $FlowFixMe[incompatible-return]: assume body is always available
+  return (((0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isElement)(element) ? element.ownerDocument : // $FlowFixMe[prop-missing]
+  element.document) || window.document).documentElement;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentRect.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getDocumentRect.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getDocumentRect)
+/* harmony export */ });
+/* harmony import */ var _getDocumentElement_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _getComputedStyle_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./getComputedStyle.js */ "./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js");
+/* harmony import */ var _getWindowScrollBarX_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getWindowScrollBarX.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScrollBarX.js");
+/* harmony import */ var _getWindowScroll_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getWindowScroll.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScroll.js");
+/* harmony import */ var _utils_math_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/math.js */ "./node_modules/@popperjs/core/lib/utils/math.js");
+
+
+
+
+ // Gets the entire size of the scrollable document area, even extending outside
+// of the `<html>` and `<body>` rect bounds if horizontally scrollable
+
+function getDocumentRect(element) {
+  var _element$ownerDocumen;
+
+  var html = (0,_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element);
+  var winScroll = (0,_getWindowScroll_js__WEBPACK_IMPORTED_MODULE_1__["default"])(element);
+  var body = (_element$ownerDocumen = element.ownerDocument) == null ? void 0 : _element$ownerDocumen.body;
+  var width = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_2__.max)(html.scrollWidth, html.clientWidth, body ? body.scrollWidth : 0, body ? body.clientWidth : 0);
+  var height = (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_2__.max)(html.scrollHeight, html.clientHeight, body ? body.scrollHeight : 0, body ? body.clientHeight : 0);
+  var x = -winScroll.scrollLeft + (0,_getWindowScrollBarX_js__WEBPACK_IMPORTED_MODULE_3__["default"])(element);
+  var y = -winScroll.scrollTop;
+
+  if ((0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_4__["default"])(body || html).direction === 'rtl') {
+    x += (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_2__.max)(html.clientWidth, body ? body.clientWidth : 0) - width;
+  }
+
+  return {
+    width: width,
+    height: height,
+    x: x,
+    y: y
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getHTMLElementScroll.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getHTMLElementScroll.js ***!
+  \***************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getHTMLElementScroll)
+/* harmony export */ });
+function getHTMLElementScroll(element) {
+  return {
+    scrollLeft: element.scrollLeft,
+    scrollTop: element.scrollTop
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getLayoutRect.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getLayoutRect.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getLayoutRect)
+/* harmony export */ });
+/* harmony import */ var _getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getBoundingClientRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getBoundingClientRect.js");
+ // Returns the layout rect of an element relative to its offsetParent. Layout
+// means it doesn't take into account transforms.
+
+function getLayoutRect(element) {
+  var clientRect = (0,_getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element); // Use the clientRect sizes if it's not been transformed.
+  // Fixes https://github.com/popperjs/popper-core/issues/1223
+
+  var width = element.offsetWidth;
+  var height = element.offsetHeight;
+
+  if (Math.abs(clientRect.width - width) <= 1) {
+    width = clientRect.width;
+  }
+
+  if (Math.abs(clientRect.height - height) <= 1) {
+    height = clientRect.height;
+  }
+
+  return {
+    x: element.offsetLeft,
+    y: element.offsetTop,
+    width: width,
+    height: height
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js ***!
+  \******************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getNodeName)
+/* harmony export */ });
+function getNodeName(element) {
+  return element ? (element.nodeName || '').toLowerCase() : null;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getNodeScroll.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getNodeScroll.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getNodeScroll)
+/* harmony export */ });
+/* harmony import */ var _getWindowScroll_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./getWindowScroll.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScroll.js");
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+/* harmony import */ var _getHTMLElementScroll_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getHTMLElementScroll.js */ "./node_modules/@popperjs/core/lib/dom-utils/getHTMLElementScroll.js");
+
+
+
+
+function getNodeScroll(node) {
+  if (node === (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(node) || !(0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_1__.isHTMLElement)(node)) {
+    return (0,_getWindowScroll_js__WEBPACK_IMPORTED_MODULE_2__["default"])(node);
+  } else {
+    return (0,_getHTMLElementScroll_js__WEBPACK_IMPORTED_MODULE_3__["default"])(node);
+  }
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getOffsetParent.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getOffsetParent.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getOffsetParent)
+/* harmony export */ });
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+/* harmony import */ var _getNodeName_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./getNodeName.js */ "./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js");
+/* harmony import */ var _getComputedStyle_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getComputedStyle.js */ "./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js");
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+/* harmony import */ var _isTableElement_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./isTableElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/isTableElement.js");
+/* harmony import */ var _getParentNode_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getParentNode.js */ "./node_modules/@popperjs/core/lib/dom-utils/getParentNode.js");
+/* harmony import */ var _utils_userAgent_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/userAgent.js */ "./node_modules/@popperjs/core/lib/utils/userAgent.js");
+
+
+
+
+
+
+
+
+function getTrueOffsetParent(element) {
+  if (!(0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(element) || // https://github.com/popperjs/popper-core/issues/837
+  (0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_1__["default"])(element).position === 'fixed') {
+    return null;
+  }
+
+  return element.offsetParent;
+} // `.offsetParent` reports `null` for fixed elements, while absolute elements
+// return the containing block
+
+
+function getContainingBlock(element) {
+  var isFirefox = /firefox/i.test((0,_utils_userAgent_js__WEBPACK_IMPORTED_MODULE_2__["default"])());
+  var isIE = /Trident/i.test((0,_utils_userAgent_js__WEBPACK_IMPORTED_MODULE_2__["default"])());
+
+  if (isIE && (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(element)) {
+    // In IE 9, 10 and 11 fixed elements containing block is always established by the viewport
+    var elementCss = (0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_1__["default"])(element);
+
+    if (elementCss.position === 'fixed') {
+      return null;
+    }
+  }
+
+  var currentNode = (0,_getParentNode_js__WEBPACK_IMPORTED_MODULE_3__["default"])(element);
+
+  if ((0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isShadowRoot)(currentNode)) {
+    currentNode = currentNode.host;
+  }
+
+  while ((0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(currentNode) && ['html', 'body'].indexOf((0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_4__["default"])(currentNode)) < 0) {
+    var css = (0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_1__["default"])(currentNode); // This is non-exhaustive but covers the most common CSS properties that
+    // create a containing block.
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
+
+    if (css.transform !== 'none' || css.perspective !== 'none' || css.contain === 'paint' || ['transform', 'perspective'].indexOf(css.willChange) !== -1 || isFirefox && css.willChange === 'filter' || isFirefox && css.filter && css.filter !== 'none') {
+      return currentNode;
+    } else {
+      currentNode = currentNode.parentNode;
+    }
+  }
+
+  return null;
+} // Gets the closest ancestor positioned element. Handles some edge cases,
+// such as table ancestors and cross browser bugs.
+
+
+function getOffsetParent(element) {
+  var window = (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_5__["default"])(element);
+  var offsetParent = getTrueOffsetParent(element);
+
+  while (offsetParent && (0,_isTableElement_js__WEBPACK_IMPORTED_MODULE_6__["default"])(offsetParent) && (0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_1__["default"])(offsetParent).position === 'static') {
+    offsetParent = getTrueOffsetParent(offsetParent);
+  }
+
+  if (offsetParent && ((0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_4__["default"])(offsetParent) === 'html' || (0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_4__["default"])(offsetParent) === 'body' && (0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_1__["default"])(offsetParent).position === 'static')) {
+    return window;
+  }
+
+  return offsetParent || getContainingBlock(element) || window;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getParentNode.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getParentNode.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getParentNode)
+/* harmony export */ });
+/* harmony import */ var _getNodeName_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getNodeName.js */ "./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js");
+/* harmony import */ var _getDocumentElement_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+
+
+
+function getParentNode(element) {
+  if ((0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element) === 'html') {
+    return element;
+  }
+
+  return (// this is a quicker (but less type safe) way to save quite some bytes from the bundle
+    // $FlowFixMe[incompatible-return]
+    // $FlowFixMe[prop-missing]
+    element.assignedSlot || // step into the shadow DOM of the parent of a slotted node
+    element.parentNode || ( // DOM Element detected
+    (0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_1__.isShadowRoot)(element) ? element.host : null) || // ShadowRoot detected
+    // $FlowFixMe[incompatible-call]: HTMLElement is a Node
+    (0,_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_2__["default"])(element) // fallback
+
+  );
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getScrollParent.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getScrollParent.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getScrollParent)
+/* harmony export */ });
+/* harmony import */ var _getParentNode_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getParentNode.js */ "./node_modules/@popperjs/core/lib/dom-utils/getParentNode.js");
+/* harmony import */ var _isScrollParent_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./isScrollParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/isScrollParent.js");
+/* harmony import */ var _getNodeName_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getNodeName.js */ "./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js");
+/* harmony import */ var _instanceOf_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+
+
+
+
+function getScrollParent(node) {
+  if (['html', 'body', '#document'].indexOf((0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_0__["default"])(node)) >= 0) {
+    // $FlowFixMe[incompatible-return]: assume body is always available
+    return node.ownerDocument.body;
+  }
+
+  if ((0,_instanceOf_js__WEBPACK_IMPORTED_MODULE_1__.isHTMLElement)(node) && (0,_isScrollParent_js__WEBPACK_IMPORTED_MODULE_2__["default"])(node)) {
+    return node;
+  }
+
+  return getScrollParent((0,_getParentNode_js__WEBPACK_IMPORTED_MODULE_3__["default"])(node));
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getViewportRect.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getViewportRect.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getViewportRect)
+/* harmony export */ });
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+/* harmony import */ var _getDocumentElement_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _getWindowScrollBarX_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getWindowScrollBarX.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScrollBarX.js");
+/* harmony import */ var _isLayoutViewport_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./isLayoutViewport.js */ "./node_modules/@popperjs/core/lib/dom-utils/isLayoutViewport.js");
+
+
+
+
+function getViewportRect(element, strategy) {
+  var win = (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element);
+  var html = (0,_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_1__["default"])(element);
+  var visualViewport = win.visualViewport;
+  var width = html.clientWidth;
+  var height = html.clientHeight;
+  var x = 0;
+  var y = 0;
+
+  if (visualViewport) {
+    width = visualViewport.width;
+    height = visualViewport.height;
+    var layoutViewport = (0,_isLayoutViewport_js__WEBPACK_IMPORTED_MODULE_2__["default"])();
+
+    if (layoutViewport || !layoutViewport && strategy === 'fixed') {
+      x = visualViewport.offsetLeft;
+      y = visualViewport.offsetTop;
+    }
+  }
+
+  return {
+    width: width,
+    height: height,
+    x: x + (0,_getWindowScrollBarX_js__WEBPACK_IMPORTED_MODULE_3__["default"])(element),
+    y: y
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js":
+/*!****************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getWindow.js ***!
+  \****************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getWindow)
+/* harmony export */ });
+function getWindow(node) {
+  if (node == null) {
+    return window;
+  }
+
+  if (node.toString() !== '[object Window]') {
+    var ownerDocument = node.ownerDocument;
+    return ownerDocument ? ownerDocument.defaultView || window : window;
+  }
+
+  return node;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScroll.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getWindowScroll.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getWindowScroll)
+/* harmony export */ });
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+
+function getWindowScroll(node) {
+  var win = (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(node);
+  var scrollLeft = win.pageXOffset;
+  var scrollTop = win.pageYOffset;
+  return {
+    scrollLeft: scrollLeft,
+    scrollTop: scrollTop
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScrollBarX.js":
+/*!**************************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/getWindowScrollBarX.js ***!
+  \**************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getWindowScrollBarX)
+/* harmony export */ });
+/* harmony import */ var _getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getBoundingClientRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getBoundingClientRect.js");
+/* harmony import */ var _getDocumentElement_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _getWindowScroll_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./getWindowScroll.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindowScroll.js");
+
+
+
+function getWindowScrollBarX(element) {
+  // If <html> has a CSS width greater than the viewport, then this will be
+  // incorrect for RTL.
+  // Popper 1 is broken in this case and never had a bug report so let's assume
+  // it's not an issue. I don't think anyone ever specifies width on <html>
+  // anyway.
+  // Browsers where the left scrollbar doesn't cause an issue report `0` for
+  // this (e.g. Edge 2019, IE11, Safari)
+  return (0,_getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_0__["default"])((0,_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_1__["default"])(element)).left + (0,_getWindowScroll_js__WEBPACK_IMPORTED_MODULE_2__["default"])(element).scrollLeft;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js ***!
+  \*****************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "isElement": () => (/* binding */ isElement),
+/* harmony export */   "isHTMLElement": () => (/* binding */ isHTMLElement),
+/* harmony export */   "isShadowRoot": () => (/* binding */ isShadowRoot)
+/* harmony export */ });
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+
+
+function isElement(node) {
+  var OwnElement = (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(node).Element;
+  return node instanceof OwnElement || node instanceof Element;
+}
+
+function isHTMLElement(node) {
+  var OwnElement = (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(node).HTMLElement;
+  return node instanceof OwnElement || node instanceof HTMLElement;
+}
+
+function isShadowRoot(node) {
+  // IE 11 has no ShadowRoot
+  if (typeof ShadowRoot === 'undefined') {
+    return false;
+  }
+
+  var OwnElement = (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(node).ShadowRoot;
+  return node instanceof OwnElement || node instanceof ShadowRoot;
+}
+
+
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/isLayoutViewport.js":
+/*!***********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/isLayoutViewport.js ***!
+  \***********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ isLayoutViewport)
+/* harmony export */ });
+/* harmony import */ var _utils_userAgent_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/userAgent.js */ "./node_modules/@popperjs/core/lib/utils/userAgent.js");
+
+function isLayoutViewport() {
+  return !/^((?!chrome|android).)*safari/i.test((0,_utils_userAgent_js__WEBPACK_IMPORTED_MODULE_0__["default"])());
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/isScrollParent.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/isScrollParent.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ isScrollParent)
+/* harmony export */ });
+/* harmony import */ var _getComputedStyle_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getComputedStyle.js */ "./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js");
+
+function isScrollParent(element) {
+  // Firefox wants us to check `-x` and `-y` variations as well
+  var _getComputedStyle = (0,_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element),
+      overflow = _getComputedStyle.overflow,
+      overflowX = _getComputedStyle.overflowX,
+      overflowY = _getComputedStyle.overflowY;
+
+  return /auto|scroll|overlay|hidden/.test(overflow + overflowY + overflowX);
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/isTableElement.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/isTableElement.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ isTableElement)
+/* harmony export */ });
+/* harmony import */ var _getNodeName_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getNodeName.js */ "./node_modules/@popperjs/core/lib/dom-utils/getNodeName.js");
+
+function isTableElement(element) {
+  return ['table', 'td', 'th'].indexOf((0,_getNodeName_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element)) >= 0;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/dom-utils/listScrollParents.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/dom-utils/listScrollParents.js ***!
+  \************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ listScrollParents)
+/* harmony export */ });
+/* harmony import */ var _getScrollParent_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getScrollParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/getScrollParent.js");
+/* harmony import */ var _getParentNode_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getParentNode.js */ "./node_modules/@popperjs/core/lib/dom-utils/getParentNode.js");
+/* harmony import */ var _getWindow_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+/* harmony import */ var _isScrollParent_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./isScrollParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/isScrollParent.js");
+
+
+
+
+/*
+given a DOM element, return the list of all scroll parents, up the list of ancesors
+until we get to the top window object. This list is what we attach scroll listeners
+to, because if any of these parent elements scroll, we'll need to re-calculate the
+reference element's position.
+*/
+
+function listScrollParents(element, list) {
+  var _element$ownerDocumen;
+
+  if (list === void 0) {
+    list = [];
+  }
+
+  var scrollParent = (0,_getScrollParent_js__WEBPACK_IMPORTED_MODULE_0__["default"])(element);
+  var isBody = scrollParent === ((_element$ownerDocumen = element.ownerDocument) == null ? void 0 : _element$ownerDocumen.body);
+  var win = (0,_getWindow_js__WEBPACK_IMPORTED_MODULE_1__["default"])(scrollParent);
+  var target = isBody ? [win].concat(win.visualViewport || [], (0,_isScrollParent_js__WEBPACK_IMPORTED_MODULE_2__["default"])(scrollParent) ? scrollParent : []) : scrollParent;
+  var updatedList = list.concat(target);
+  return isBody ? updatedList : // $FlowFixMe[incompatible-call]: isBody tells us target will be an HTMLElement here
+  updatedList.concat(listScrollParents((0,_getParentNode_js__WEBPACK_IMPORTED_MODULE_3__["default"])(target)));
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/enums.js":
+/*!**************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/enums.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "afterMain": () => (/* binding */ afterMain),
+/* harmony export */   "afterRead": () => (/* binding */ afterRead),
+/* harmony export */   "afterWrite": () => (/* binding */ afterWrite),
+/* harmony export */   "auto": () => (/* binding */ auto),
+/* harmony export */   "basePlacements": () => (/* binding */ basePlacements),
+/* harmony export */   "beforeMain": () => (/* binding */ beforeMain),
+/* harmony export */   "beforeRead": () => (/* binding */ beforeRead),
+/* harmony export */   "beforeWrite": () => (/* binding */ beforeWrite),
+/* harmony export */   "bottom": () => (/* binding */ bottom),
+/* harmony export */   "clippingParents": () => (/* binding */ clippingParents),
+/* harmony export */   "end": () => (/* binding */ end),
+/* harmony export */   "left": () => (/* binding */ left),
+/* harmony export */   "main": () => (/* binding */ main),
+/* harmony export */   "modifierPhases": () => (/* binding */ modifierPhases),
+/* harmony export */   "placements": () => (/* binding */ placements),
+/* harmony export */   "popper": () => (/* binding */ popper),
+/* harmony export */   "read": () => (/* binding */ read),
+/* harmony export */   "reference": () => (/* binding */ reference),
+/* harmony export */   "right": () => (/* binding */ right),
+/* harmony export */   "start": () => (/* binding */ start),
+/* harmony export */   "top": () => (/* binding */ top),
+/* harmony export */   "variationPlacements": () => (/* binding */ variationPlacements),
+/* harmony export */   "viewport": () => (/* binding */ viewport),
+/* harmony export */   "write": () => (/* binding */ write)
+/* harmony export */ });
+var top = 'top';
+var bottom = 'bottom';
+var right = 'right';
+var left = 'left';
+var auto = 'auto';
+var basePlacements = [top, bottom, right, left];
+var start = 'start';
+var end = 'end';
+var clippingParents = 'clippingParents';
+var viewport = 'viewport';
+var popper = 'popper';
+var reference = 'reference';
+var variationPlacements = /*#__PURE__*/basePlacements.reduce(function (acc, placement) {
+  return acc.concat([placement + "-" + start, placement + "-" + end]);
+}, []);
+var placements = /*#__PURE__*/[].concat(basePlacements, [auto]).reduce(function (acc, placement) {
+  return acc.concat([placement, placement + "-" + start, placement + "-" + end]);
+}, []); // modifiers that need to read the DOM
+
+var beforeRead = 'beforeRead';
+var read = 'read';
+var afterRead = 'afterRead'; // pure-logic modifiers
+
+var beforeMain = 'beforeMain';
+var main = 'main';
+var afterMain = 'afterMain'; // modifier with the purpose to write to the DOM (or write into a framework state)
+
+var beforeWrite = 'beforeWrite';
+var write = 'write';
+var afterWrite = 'afterWrite';
+var modifierPhases = [beforeRead, read, afterRead, beforeMain, main, afterMain, beforeWrite, write, afterWrite];
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/arrow.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/arrow.js ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+/* harmony import */ var _dom_utils_getLayoutRect_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../dom-utils/getLayoutRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getLayoutRect.js");
+/* harmony import */ var _dom_utils_contains_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../dom-utils/contains.js */ "./node_modules/@popperjs/core/lib/dom-utils/contains.js");
+/* harmony import */ var _dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../dom-utils/getOffsetParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/getOffsetParent.js");
+/* harmony import */ var _utils_getMainAxisFromPlacement_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/getMainAxisFromPlacement.js */ "./node_modules/@popperjs/core/lib/utils/getMainAxisFromPlacement.js");
+/* harmony import */ var _utils_within_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/within.js */ "./node_modules/@popperjs/core/lib/utils/within.js");
+/* harmony import */ var _utils_mergePaddingObject_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/mergePaddingObject.js */ "./node_modules/@popperjs/core/lib/utils/mergePaddingObject.js");
+/* harmony import */ var _utils_expandToHashMap_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/expandToHashMap.js */ "./node_modules/@popperjs/core/lib/utils/expandToHashMap.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _dom_utils_instanceOf_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../dom-utils/instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+
+
+
+
+
+
+
+
+
+ // eslint-disable-next-line import/no-unused-modules
+
+var toPaddingObject = function toPaddingObject(padding, state) {
+  padding = typeof padding === 'function' ? padding(Object.assign({}, state.rects, {
+    placement: state.placement
+  })) : padding;
+  return (0,_utils_mergePaddingObject_js__WEBPACK_IMPORTED_MODULE_0__["default"])(typeof padding !== 'number' ? padding : (0,_utils_expandToHashMap_js__WEBPACK_IMPORTED_MODULE_1__["default"])(padding, _enums_js__WEBPACK_IMPORTED_MODULE_2__.basePlacements));
+};
+
+function arrow(_ref) {
+  var _state$modifiersData$;
+
+  var state = _ref.state,
+      name = _ref.name,
+      options = _ref.options;
+  var arrowElement = state.elements.arrow;
+  var popperOffsets = state.modifiersData.popperOffsets;
+  var basePlacement = (0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_3__["default"])(state.placement);
+  var axis = (0,_utils_getMainAxisFromPlacement_js__WEBPACK_IMPORTED_MODULE_4__["default"])(basePlacement);
+  var isVertical = [_enums_js__WEBPACK_IMPORTED_MODULE_2__.left, _enums_js__WEBPACK_IMPORTED_MODULE_2__.right].indexOf(basePlacement) >= 0;
+  var len = isVertical ? 'height' : 'width';
+
+  if (!arrowElement || !popperOffsets) {
+    return;
+  }
+
+  var paddingObject = toPaddingObject(options.padding, state);
+  var arrowRect = (0,_dom_utils_getLayoutRect_js__WEBPACK_IMPORTED_MODULE_5__["default"])(arrowElement);
+  var minProp = axis === 'y' ? _enums_js__WEBPACK_IMPORTED_MODULE_2__.top : _enums_js__WEBPACK_IMPORTED_MODULE_2__.left;
+  var maxProp = axis === 'y' ? _enums_js__WEBPACK_IMPORTED_MODULE_2__.bottom : _enums_js__WEBPACK_IMPORTED_MODULE_2__.right;
+  var endDiff = state.rects.reference[len] + state.rects.reference[axis] - popperOffsets[axis] - state.rects.popper[len];
+  var startDiff = popperOffsets[axis] - state.rects.reference[axis];
+  var arrowOffsetParent = (0,_dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_6__["default"])(arrowElement);
+  var clientSize = arrowOffsetParent ? axis === 'y' ? arrowOffsetParent.clientHeight || 0 : arrowOffsetParent.clientWidth || 0 : 0;
+  var centerToReference = endDiff / 2 - startDiff / 2; // Make sure the arrow doesn't overflow the popper if the center point is
+  // outside of the popper bounds
+
+  var min = paddingObject[minProp];
+  var max = clientSize - arrowRect[len] - paddingObject[maxProp];
+  var center = clientSize / 2 - arrowRect[len] / 2 + centerToReference;
+  var offset = (0,_utils_within_js__WEBPACK_IMPORTED_MODULE_7__.within)(min, center, max); // Prevents breaking syntax highlighting...
+
+  var axisProp = axis;
+  state.modifiersData[name] = (_state$modifiersData$ = {}, _state$modifiersData$[axisProp] = offset, _state$modifiersData$.centerOffset = offset - center, _state$modifiersData$);
+}
+
+function effect(_ref2) {
+  var state = _ref2.state,
+      options = _ref2.options;
+  var _options$element = options.element,
+      arrowElement = _options$element === void 0 ? '[data-popper-arrow]' : _options$element;
+
+  if (arrowElement == null) {
+    return;
+  } // CSS selector
+
+
+  if (typeof arrowElement === 'string') {
+    arrowElement = state.elements.popper.querySelector(arrowElement);
+
+    if (!arrowElement) {
+      return;
+    }
+  }
+
+  if (true) {
+    if (!(0,_dom_utils_instanceOf_js__WEBPACK_IMPORTED_MODULE_8__.isHTMLElement)(arrowElement)) {
+      console.error(['Popper: "arrow" element must be an HTMLElement (not an SVGElement).', 'To use an SVG arrow, wrap it in an HTMLElement that will be used as', 'the arrow.'].join(' '));
+    }
+  }
+
+  if (!(0,_dom_utils_contains_js__WEBPACK_IMPORTED_MODULE_9__["default"])(state.elements.popper, arrowElement)) {
+    if (true) {
+      console.error(['Popper: "arrow" modifier\'s `element` must be a child of the popper', 'element.'].join(' '));
+    }
+
+    return;
+  }
+
+  state.elements.arrow = arrowElement;
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'arrow',
+  enabled: true,
+  phase: 'main',
+  fn: arrow,
+  effect: effect,
+  requires: ['popperOffsets'],
+  requiresIfExists: ['preventOverflow']
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/computeStyles.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/computeStyles.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   "mapToStyles": () => (/* binding */ mapToStyles)
+/* harmony export */ });
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../dom-utils/getOffsetParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/getOffsetParent.js");
+/* harmony import */ var _dom_utils_getWindow_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../dom-utils/getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+/* harmony import */ var _dom_utils_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../dom-utils/getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _dom_utils_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../dom-utils/getComputedStyle.js */ "./node_modules/@popperjs/core/lib/dom-utils/getComputedStyle.js");
+/* harmony import */ var _utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+/* harmony import */ var _utils_getVariation_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/getVariation.js */ "./node_modules/@popperjs/core/lib/utils/getVariation.js");
+/* harmony import */ var _utils_math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/math.js */ "./node_modules/@popperjs/core/lib/utils/math.js");
+
+
+
+
+
+
+
+ // eslint-disable-next-line import/no-unused-modules
+
+var unsetSides = {
+  top: 'auto',
+  right: 'auto',
+  bottom: 'auto',
+  left: 'auto'
+}; // Round the offsets to the nearest suitable subpixel based on the DPR.
+// Zooming can change the DPR, but it seems to report a value that will
+// cleanly divide the values into the appropriate subpixels.
+
+function roundOffsetsByDPR(_ref) {
+  var x = _ref.x,
+      y = _ref.y;
+  var win = window;
+  var dpr = win.devicePixelRatio || 1;
+  return {
+    x: (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_0__.round)(x * dpr) / dpr || 0,
+    y: (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_0__.round)(y * dpr) / dpr || 0
+  };
+}
+
+function mapToStyles(_ref2) {
+  var _Object$assign2;
+
+  var popper = _ref2.popper,
+      popperRect = _ref2.popperRect,
+      placement = _ref2.placement,
+      variation = _ref2.variation,
+      offsets = _ref2.offsets,
+      position = _ref2.position,
+      gpuAcceleration = _ref2.gpuAcceleration,
+      adaptive = _ref2.adaptive,
+      roundOffsets = _ref2.roundOffsets,
+      isFixed = _ref2.isFixed;
+  var _offsets$x = offsets.x,
+      x = _offsets$x === void 0 ? 0 : _offsets$x,
+      _offsets$y = offsets.y,
+      y = _offsets$y === void 0 ? 0 : _offsets$y;
+
+  var _ref3 = typeof roundOffsets === 'function' ? roundOffsets({
+    x: x,
+    y: y
+  }) : {
+    x: x,
+    y: y
+  };
+
+  x = _ref3.x;
+  y = _ref3.y;
+  var hasX = offsets.hasOwnProperty('x');
+  var hasY = offsets.hasOwnProperty('y');
+  var sideX = _enums_js__WEBPACK_IMPORTED_MODULE_1__.left;
+  var sideY = _enums_js__WEBPACK_IMPORTED_MODULE_1__.top;
+  var win = window;
+
+  if (adaptive) {
+    var offsetParent = (0,_dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_2__["default"])(popper);
+    var heightProp = 'clientHeight';
+    var widthProp = 'clientWidth';
+
+    if (offsetParent === (0,_dom_utils_getWindow_js__WEBPACK_IMPORTED_MODULE_3__["default"])(popper)) {
+      offsetParent = (0,_dom_utils_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_4__["default"])(popper);
+
+      if ((0,_dom_utils_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_5__["default"])(offsetParent).position !== 'static' && position === 'absolute') {
+        heightProp = 'scrollHeight';
+        widthProp = 'scrollWidth';
+      }
+    } // $FlowFixMe[incompatible-cast]: force type refinement, we compare offsetParent with window above, but Flow doesn't detect it
+
+
+    offsetParent = offsetParent;
+
+    if (placement === _enums_js__WEBPACK_IMPORTED_MODULE_1__.top || (placement === _enums_js__WEBPACK_IMPORTED_MODULE_1__.left || placement === _enums_js__WEBPACK_IMPORTED_MODULE_1__.right) && variation === _enums_js__WEBPACK_IMPORTED_MODULE_1__.end) {
+      sideY = _enums_js__WEBPACK_IMPORTED_MODULE_1__.bottom;
+      var offsetY = isFixed && offsetParent === win && win.visualViewport ? win.visualViewport.height : // $FlowFixMe[prop-missing]
+      offsetParent[heightProp];
+      y -= offsetY - popperRect.height;
+      y *= gpuAcceleration ? 1 : -1;
+    }
+
+    if (placement === _enums_js__WEBPACK_IMPORTED_MODULE_1__.left || (placement === _enums_js__WEBPACK_IMPORTED_MODULE_1__.top || placement === _enums_js__WEBPACK_IMPORTED_MODULE_1__.bottom) && variation === _enums_js__WEBPACK_IMPORTED_MODULE_1__.end) {
+      sideX = _enums_js__WEBPACK_IMPORTED_MODULE_1__.right;
+      var offsetX = isFixed && offsetParent === win && win.visualViewport ? win.visualViewport.width : // $FlowFixMe[prop-missing]
+      offsetParent[widthProp];
+      x -= offsetX - popperRect.width;
+      x *= gpuAcceleration ? 1 : -1;
+    }
+  }
+
+  var commonStyles = Object.assign({
+    position: position
+  }, adaptive && unsetSides);
+
+  var _ref4 = roundOffsets === true ? roundOffsetsByDPR({
+    x: x,
+    y: y
+  }) : {
+    x: x,
+    y: y
+  };
+
+  x = _ref4.x;
+  y = _ref4.y;
+
+  if (gpuAcceleration) {
+    var _Object$assign;
+
+    return Object.assign({}, commonStyles, (_Object$assign = {}, _Object$assign[sideY] = hasY ? '0' : '', _Object$assign[sideX] = hasX ? '0' : '', _Object$assign.transform = (win.devicePixelRatio || 1) <= 1 ? "translate(" + x + "px, " + y + "px)" : "translate3d(" + x + "px, " + y + "px, 0)", _Object$assign));
+  }
+
+  return Object.assign({}, commonStyles, (_Object$assign2 = {}, _Object$assign2[sideY] = hasY ? y + "px" : '', _Object$assign2[sideX] = hasX ? x + "px" : '', _Object$assign2.transform = '', _Object$assign2));
+}
+
+function computeStyles(_ref5) {
+  var state = _ref5.state,
+      options = _ref5.options;
+  var _options$gpuAccelerat = options.gpuAcceleration,
+      gpuAcceleration = _options$gpuAccelerat === void 0 ? true : _options$gpuAccelerat,
+      _options$adaptive = options.adaptive,
+      adaptive = _options$adaptive === void 0 ? true : _options$adaptive,
+      _options$roundOffsets = options.roundOffsets,
+      roundOffsets = _options$roundOffsets === void 0 ? true : _options$roundOffsets;
+
+  if (true) {
+    var transitionProperty = (0,_dom_utils_getComputedStyle_js__WEBPACK_IMPORTED_MODULE_5__["default"])(state.elements.popper).transitionProperty || '';
+
+    if (adaptive && ['transform', 'top', 'right', 'bottom', 'left'].some(function (property) {
+      return transitionProperty.indexOf(property) >= 0;
+    })) {
+      console.warn(['Popper: Detected CSS transitions on at least one of the following', 'CSS properties: "transform", "top", "right", "bottom", "left".', '\n\n', 'Disable the "computeStyles" modifier\'s `adaptive` option to allow', 'for smooth transitions, or remove these properties from the CSS', 'transition declaration on the popper element if only transitioning', 'opacity or background-color for example.', '\n\n', 'We recommend using the popper element as a wrapper around an inner', 'element that can have any CSS property transitioned for animations.'].join(' '));
+    }
+  }
+
+  var commonStyles = {
+    placement: (0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_6__["default"])(state.placement),
+    variation: (0,_utils_getVariation_js__WEBPACK_IMPORTED_MODULE_7__["default"])(state.placement),
+    popper: state.elements.popper,
+    popperRect: state.rects.popper,
+    gpuAcceleration: gpuAcceleration,
+    isFixed: state.options.strategy === 'fixed'
+  };
+
+  if (state.modifiersData.popperOffsets != null) {
+    state.styles.popper = Object.assign({}, state.styles.popper, mapToStyles(Object.assign({}, commonStyles, {
+      offsets: state.modifiersData.popperOffsets,
+      position: state.options.strategy,
+      adaptive: adaptive,
+      roundOffsets: roundOffsets
+    })));
+  }
+
+  if (state.modifiersData.arrow != null) {
+    state.styles.arrow = Object.assign({}, state.styles.arrow, mapToStyles(Object.assign({}, commonStyles, {
+      offsets: state.modifiersData.arrow,
+      position: 'absolute',
+      adaptive: false,
+      roundOffsets: roundOffsets
+    })));
+  }
+
+  state.attributes.popper = Object.assign({}, state.attributes.popper, {
+    'data-popper-placement': state.placement
+  });
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'computeStyles',
+  enabled: true,
+  phase: 'beforeWrite',
+  fn: computeStyles,
+  data: {}
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/eventListeners.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/eventListeners.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _dom_utils_getWindow_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../dom-utils/getWindow.js */ "./node_modules/@popperjs/core/lib/dom-utils/getWindow.js");
+ // eslint-disable-next-line import/no-unused-modules
+
+var passive = {
+  passive: true
+};
+
+function effect(_ref) {
+  var state = _ref.state,
+      instance = _ref.instance,
+      options = _ref.options;
+  var _options$scroll = options.scroll,
+      scroll = _options$scroll === void 0 ? true : _options$scroll,
+      _options$resize = options.resize,
+      resize = _options$resize === void 0 ? true : _options$resize;
+  var window = (0,_dom_utils_getWindow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(state.elements.popper);
+  var scrollParents = [].concat(state.scrollParents.reference, state.scrollParents.popper);
+
+  if (scroll) {
+    scrollParents.forEach(function (scrollParent) {
+      scrollParent.addEventListener('scroll', instance.update, passive);
+    });
+  }
+
+  if (resize) {
+    window.addEventListener('resize', instance.update, passive);
+  }
+
+  return function () {
+    if (scroll) {
+      scrollParents.forEach(function (scrollParent) {
+        scrollParent.removeEventListener('scroll', instance.update, passive);
+      });
+    }
+
+    if (resize) {
+      window.removeEventListener('resize', instance.update, passive);
+    }
+  };
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'eventListeners',
+  enabled: true,
+  phase: 'write',
+  fn: function fn() {},
+  effect: effect,
+  data: {}
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/flip.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/flip.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _utils_getOppositePlacement_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/getOppositePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getOppositePlacement.js");
+/* harmony import */ var _utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+/* harmony import */ var _utils_getOppositeVariationPlacement_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/getOppositeVariationPlacement.js */ "./node_modules/@popperjs/core/lib/utils/getOppositeVariationPlacement.js");
+/* harmony import */ var _utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../utils/detectOverflow.js */ "./node_modules/@popperjs/core/lib/utils/detectOverflow.js");
+/* harmony import */ var _utils_computeAutoPlacement_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/computeAutoPlacement.js */ "./node_modules/@popperjs/core/lib/utils/computeAutoPlacement.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _utils_getVariation_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../utils/getVariation.js */ "./node_modules/@popperjs/core/lib/utils/getVariation.js");
+
+
+
+
+
+
+ // eslint-disable-next-line import/no-unused-modules
+
+function getExpandedFallbackPlacements(placement) {
+  if ((0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__["default"])(placement) === _enums_js__WEBPACK_IMPORTED_MODULE_1__.auto) {
+    return [];
+  }
+
+  var oppositePlacement = (0,_utils_getOppositePlacement_js__WEBPACK_IMPORTED_MODULE_2__["default"])(placement);
+  return [(0,_utils_getOppositeVariationPlacement_js__WEBPACK_IMPORTED_MODULE_3__["default"])(placement), oppositePlacement, (0,_utils_getOppositeVariationPlacement_js__WEBPACK_IMPORTED_MODULE_3__["default"])(oppositePlacement)];
+}
+
+function flip(_ref) {
+  var state = _ref.state,
+      options = _ref.options,
+      name = _ref.name;
+
+  if (state.modifiersData[name]._skip) {
+    return;
+  }
+
+  var _options$mainAxis = options.mainAxis,
+      checkMainAxis = _options$mainAxis === void 0 ? true : _options$mainAxis,
+      _options$altAxis = options.altAxis,
+      checkAltAxis = _options$altAxis === void 0 ? true : _options$altAxis,
+      specifiedFallbackPlacements = options.fallbackPlacements,
+      padding = options.padding,
+      boundary = options.boundary,
+      rootBoundary = options.rootBoundary,
+      altBoundary = options.altBoundary,
+      _options$flipVariatio = options.flipVariations,
+      flipVariations = _options$flipVariatio === void 0 ? true : _options$flipVariatio,
+      allowedAutoPlacements = options.allowedAutoPlacements;
+  var preferredPlacement = state.options.placement;
+  var basePlacement = (0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__["default"])(preferredPlacement);
+  var isBasePlacement = basePlacement === preferredPlacement;
+  var fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipVariations ? [(0,_utils_getOppositePlacement_js__WEBPACK_IMPORTED_MODULE_2__["default"])(preferredPlacement)] : getExpandedFallbackPlacements(preferredPlacement));
+  var placements = [preferredPlacement].concat(fallbackPlacements).reduce(function (acc, placement) {
+    return acc.concat((0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__["default"])(placement) === _enums_js__WEBPACK_IMPORTED_MODULE_1__.auto ? (0,_utils_computeAutoPlacement_js__WEBPACK_IMPORTED_MODULE_4__["default"])(state, {
+      placement: placement,
+      boundary: boundary,
+      rootBoundary: rootBoundary,
+      padding: padding,
+      flipVariations: flipVariations,
+      allowedAutoPlacements: allowedAutoPlacements
+    }) : placement);
+  }, []);
+  var referenceRect = state.rects.reference;
+  var popperRect = state.rects.popper;
+  var checksMap = new Map();
+  var makeFallbackChecks = true;
+  var firstFittingPlacement = placements[0];
+
+  for (var i = 0; i < placements.length; i++) {
+    var placement = placements[i];
+
+    var _basePlacement = (0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__["default"])(placement);
+
+    var isStartVariation = (0,_utils_getVariation_js__WEBPACK_IMPORTED_MODULE_5__["default"])(placement) === _enums_js__WEBPACK_IMPORTED_MODULE_1__.start;
+    var isVertical = [_enums_js__WEBPACK_IMPORTED_MODULE_1__.top, _enums_js__WEBPACK_IMPORTED_MODULE_1__.bottom].indexOf(_basePlacement) >= 0;
+    var len = isVertical ? 'width' : 'height';
+    var overflow = (0,_utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_6__["default"])(state, {
+      placement: placement,
+      boundary: boundary,
+      rootBoundary: rootBoundary,
+      altBoundary: altBoundary,
+      padding: padding
+    });
+    var mainVariationSide = isVertical ? isStartVariation ? _enums_js__WEBPACK_IMPORTED_MODULE_1__.right : _enums_js__WEBPACK_IMPORTED_MODULE_1__.left : isStartVariation ? _enums_js__WEBPACK_IMPORTED_MODULE_1__.bottom : _enums_js__WEBPACK_IMPORTED_MODULE_1__.top;
+
+    if (referenceRect[len] > popperRect[len]) {
+      mainVariationSide = (0,_utils_getOppositePlacement_js__WEBPACK_IMPORTED_MODULE_2__["default"])(mainVariationSide);
+    }
+
+    var altVariationSide = (0,_utils_getOppositePlacement_js__WEBPACK_IMPORTED_MODULE_2__["default"])(mainVariationSide);
+    var checks = [];
+
+    if (checkMainAxis) {
+      checks.push(overflow[_basePlacement] <= 0);
+    }
+
+    if (checkAltAxis) {
+      checks.push(overflow[mainVariationSide] <= 0, overflow[altVariationSide] <= 0);
+    }
+
+    if (checks.every(function (check) {
+      return check;
+    })) {
+      firstFittingPlacement = placement;
+      makeFallbackChecks = false;
+      break;
+    }
+
+    checksMap.set(placement, checks);
+  }
+
+  if (makeFallbackChecks) {
+    // `2` may be desired in some cases – research later
+    var numberOfChecks = flipVariations ? 3 : 1;
+
+    var _loop = function _loop(_i) {
+      var fittingPlacement = placements.find(function (placement) {
+        var checks = checksMap.get(placement);
+
+        if (checks) {
+          return checks.slice(0, _i).every(function (check) {
+            return check;
+          });
+        }
+      });
+
+      if (fittingPlacement) {
+        firstFittingPlacement = fittingPlacement;
+        return "break";
+      }
+    };
+
+    for (var _i = numberOfChecks; _i > 0; _i--) {
+      var _ret = _loop(_i);
+
+      if (_ret === "break") break;
+    }
+  }
+
+  if (state.placement !== firstFittingPlacement) {
+    state.modifiersData[name]._skip = true;
+    state.placement = firstFittingPlacement;
+    state.reset = true;
+  }
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'flip',
+  enabled: true,
+  phase: 'main',
+  fn: flip,
+  requiresIfExists: ['offset'],
+  data: {
+    _skip: false
+  }
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/hide.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/hide.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/detectOverflow.js */ "./node_modules/@popperjs/core/lib/utils/detectOverflow.js");
+
+
+
+function getSideOffsets(overflow, rect, preventedOffsets) {
+  if (preventedOffsets === void 0) {
+    preventedOffsets = {
+      x: 0,
+      y: 0
+    };
+  }
+
+  return {
+    top: overflow.top - rect.height - preventedOffsets.y,
+    right: overflow.right - rect.width + preventedOffsets.x,
+    bottom: overflow.bottom - rect.height + preventedOffsets.y,
+    left: overflow.left - rect.width - preventedOffsets.x
+  };
+}
+
+function isAnySideFullyClipped(overflow) {
+  return [_enums_js__WEBPACK_IMPORTED_MODULE_0__.top, _enums_js__WEBPACK_IMPORTED_MODULE_0__.right, _enums_js__WEBPACK_IMPORTED_MODULE_0__.bottom, _enums_js__WEBPACK_IMPORTED_MODULE_0__.left].some(function (side) {
+    return overflow[side] >= 0;
+  });
+}
+
+function hide(_ref) {
+  var state = _ref.state,
+      name = _ref.name;
+  var referenceRect = state.rects.reference;
+  var popperRect = state.rects.popper;
+  var preventedOffsets = state.modifiersData.preventOverflow;
+  var referenceOverflow = (0,_utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_1__["default"])(state, {
+    elementContext: 'reference'
+  });
+  var popperAltOverflow = (0,_utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_1__["default"])(state, {
+    altBoundary: true
+  });
+  var referenceClippingOffsets = getSideOffsets(referenceOverflow, referenceRect);
+  var popperEscapeOffsets = getSideOffsets(popperAltOverflow, popperRect, preventedOffsets);
+  var isReferenceHidden = isAnySideFullyClipped(referenceClippingOffsets);
+  var hasPopperEscaped = isAnySideFullyClipped(popperEscapeOffsets);
+  state.modifiersData[name] = {
+    referenceClippingOffsets: referenceClippingOffsets,
+    popperEscapeOffsets: popperEscapeOffsets,
+    isReferenceHidden: isReferenceHidden,
+    hasPopperEscaped: hasPopperEscaped
+  };
+  state.attributes.popper = Object.assign({}, state.attributes.popper, {
+    'data-popper-reference-hidden': isReferenceHidden,
+    'data-popper-escaped': hasPopperEscaped
+  });
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'hide',
+  enabled: true,
+  phase: 'main',
+  requiresIfExists: ['preventOverflow'],
+  fn: hide
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/offset.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/offset.js ***!
+  \*************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   "distanceAndSkiddingToXY": () => (/* binding */ distanceAndSkiddingToXY)
+/* harmony export */ });
+/* harmony import */ var _utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+
+ // eslint-disable-next-line import/no-unused-modules
+
+function distanceAndSkiddingToXY(placement, rects, offset) {
+  var basePlacement = (0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__["default"])(placement);
+  var invertDistance = [_enums_js__WEBPACK_IMPORTED_MODULE_1__.left, _enums_js__WEBPACK_IMPORTED_MODULE_1__.top].indexOf(basePlacement) >= 0 ? -1 : 1;
+
+  var _ref = typeof offset === 'function' ? offset(Object.assign({}, rects, {
+    placement: placement
+  })) : offset,
+      skidding = _ref[0],
+      distance = _ref[1];
+
+  skidding = skidding || 0;
+  distance = (distance || 0) * invertDistance;
+  return [_enums_js__WEBPACK_IMPORTED_MODULE_1__.left, _enums_js__WEBPACK_IMPORTED_MODULE_1__.right].indexOf(basePlacement) >= 0 ? {
+    x: distance,
+    y: skidding
+  } : {
+    x: skidding,
+    y: distance
+  };
+}
+
+function offset(_ref2) {
+  var state = _ref2.state,
+      options = _ref2.options,
+      name = _ref2.name;
+  var _options$offset = options.offset,
+      offset = _options$offset === void 0 ? [0, 0] : _options$offset;
+  var data = _enums_js__WEBPACK_IMPORTED_MODULE_1__.placements.reduce(function (acc, placement) {
+    acc[placement] = distanceAndSkiddingToXY(placement, state.rects, offset);
+    return acc;
+  }, {});
+  var _data$state$placement = data[state.placement],
+      x = _data$state$placement.x,
+      y = _data$state$placement.y;
+
+  if (state.modifiersData.popperOffsets != null) {
+    state.modifiersData.popperOffsets.x += x;
+    state.modifiersData.popperOffsets.y += y;
+  }
+
+  state.modifiersData[name] = data;
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'offset',
+  enabled: true,
+  phase: 'main',
+  requires: ['popperOffsets'],
+  fn: offset
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/popperOffsets.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/popperOffsets.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _utils_computeOffsets_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/computeOffsets.js */ "./node_modules/@popperjs/core/lib/utils/computeOffsets.js");
+
+
+function popperOffsets(_ref) {
+  var state = _ref.state,
+      name = _ref.name;
+  // Offsets are the actual position the popper needs to have to be
+  // properly positioned near its reference element
+  // This is the most basic placement, and will be adjusted by
+  // the modifiers in the next step
+  state.modifiersData[name] = (0,_utils_computeOffsets_js__WEBPACK_IMPORTED_MODULE_0__["default"])({
+    reference: state.rects.reference,
+    element: state.rects.popper,
+    strategy: 'absolute',
+    placement: state.placement
+  });
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'popperOffsets',
+  enabled: true,
+  phase: 'read',
+  fn: popperOffsets,
+  data: {}
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/modifiers/preventOverflow.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/modifiers/preventOverflow.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../utils/getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+/* harmony import */ var _utils_getMainAxisFromPlacement_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/getMainAxisFromPlacement.js */ "./node_modules/@popperjs/core/lib/utils/getMainAxisFromPlacement.js");
+/* harmony import */ var _utils_getAltAxis_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/getAltAxis.js */ "./node_modules/@popperjs/core/lib/utils/getAltAxis.js");
+/* harmony import */ var _utils_within_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../utils/within.js */ "./node_modules/@popperjs/core/lib/utils/within.js");
+/* harmony import */ var _dom_utils_getLayoutRect_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../dom-utils/getLayoutRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getLayoutRect.js");
+/* harmony import */ var _dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../dom-utils/getOffsetParent.js */ "./node_modules/@popperjs/core/lib/dom-utils/getOffsetParent.js");
+/* harmony import */ var _utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/detectOverflow.js */ "./node_modules/@popperjs/core/lib/utils/detectOverflow.js");
+/* harmony import */ var _utils_getVariation_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/getVariation.js */ "./node_modules/@popperjs/core/lib/utils/getVariation.js");
+/* harmony import */ var _utils_getFreshSideObject_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../utils/getFreshSideObject.js */ "./node_modules/@popperjs/core/lib/utils/getFreshSideObject.js");
+/* harmony import */ var _utils_math_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../utils/math.js */ "./node_modules/@popperjs/core/lib/utils/math.js");
+
+
+
+
+
+
+
+
+
+
+
+
+function preventOverflow(_ref) {
+  var state = _ref.state,
+      options = _ref.options,
+      name = _ref.name;
+  var _options$mainAxis = options.mainAxis,
+      checkMainAxis = _options$mainAxis === void 0 ? true : _options$mainAxis,
+      _options$altAxis = options.altAxis,
+      checkAltAxis = _options$altAxis === void 0 ? false : _options$altAxis,
+      boundary = options.boundary,
+      rootBoundary = options.rootBoundary,
+      altBoundary = options.altBoundary,
+      padding = options.padding,
+      _options$tether = options.tether,
+      tether = _options$tether === void 0 ? true : _options$tether,
+      _options$tetherOffset = options.tetherOffset,
+      tetherOffset = _options$tetherOffset === void 0 ? 0 : _options$tetherOffset;
+  var overflow = (0,_utils_detectOverflow_js__WEBPACK_IMPORTED_MODULE_0__["default"])(state, {
+    boundary: boundary,
+    rootBoundary: rootBoundary,
+    padding: padding,
+    altBoundary: altBoundary
+  });
+  var basePlacement = (0,_utils_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_1__["default"])(state.placement);
+  var variation = (0,_utils_getVariation_js__WEBPACK_IMPORTED_MODULE_2__["default"])(state.placement);
+  var isBasePlacement = !variation;
+  var mainAxis = (0,_utils_getMainAxisFromPlacement_js__WEBPACK_IMPORTED_MODULE_3__["default"])(basePlacement);
+  var altAxis = (0,_utils_getAltAxis_js__WEBPACK_IMPORTED_MODULE_4__["default"])(mainAxis);
+  var popperOffsets = state.modifiersData.popperOffsets;
+  var referenceRect = state.rects.reference;
+  var popperRect = state.rects.popper;
+  var tetherOffsetValue = typeof tetherOffset === 'function' ? tetherOffset(Object.assign({}, state.rects, {
+    placement: state.placement
+  })) : tetherOffset;
+  var normalizedTetherOffsetValue = typeof tetherOffsetValue === 'number' ? {
+    mainAxis: tetherOffsetValue,
+    altAxis: tetherOffsetValue
+  } : Object.assign({
+    mainAxis: 0,
+    altAxis: 0
+  }, tetherOffsetValue);
+  var offsetModifierState = state.modifiersData.offset ? state.modifiersData.offset[state.placement] : null;
+  var data = {
+    x: 0,
+    y: 0
+  };
+
+  if (!popperOffsets) {
+    return;
+  }
+
+  if (checkMainAxis) {
+    var _offsetModifierState$;
+
+    var mainSide = mainAxis === 'y' ? _enums_js__WEBPACK_IMPORTED_MODULE_5__.top : _enums_js__WEBPACK_IMPORTED_MODULE_5__.left;
+    var altSide = mainAxis === 'y' ? _enums_js__WEBPACK_IMPORTED_MODULE_5__.bottom : _enums_js__WEBPACK_IMPORTED_MODULE_5__.right;
+    var len = mainAxis === 'y' ? 'height' : 'width';
+    var offset = popperOffsets[mainAxis];
+    var min = offset + overflow[mainSide];
+    var max = offset - overflow[altSide];
+    var additive = tether ? -popperRect[len] / 2 : 0;
+    var minLen = variation === _enums_js__WEBPACK_IMPORTED_MODULE_5__.start ? referenceRect[len] : popperRect[len];
+    var maxLen = variation === _enums_js__WEBPACK_IMPORTED_MODULE_5__.start ? -popperRect[len] : -referenceRect[len]; // We need to include the arrow in the calculation so the arrow doesn't go
+    // outside the reference bounds
+
+    var arrowElement = state.elements.arrow;
+    var arrowRect = tether && arrowElement ? (0,_dom_utils_getLayoutRect_js__WEBPACK_IMPORTED_MODULE_6__["default"])(arrowElement) : {
+      width: 0,
+      height: 0
+    };
+    var arrowPaddingObject = state.modifiersData['arrow#persistent'] ? state.modifiersData['arrow#persistent'].padding : (0,_utils_getFreshSideObject_js__WEBPACK_IMPORTED_MODULE_7__["default"])();
+    var arrowPaddingMin = arrowPaddingObject[mainSide];
+    var arrowPaddingMax = arrowPaddingObject[altSide]; // If the reference length is smaller than the arrow length, we don't want
+    // to include its full size in the calculation. If the reference is small
+    // and near the edge of a boundary, the popper can overflow even if the
+    // reference is not overflowing as well (e.g. virtual elements with no
+    // width or height)
+
+    var arrowLen = (0,_utils_within_js__WEBPACK_IMPORTED_MODULE_8__.within)(0, referenceRect[len], arrowRect[len]);
+    var minOffset = isBasePlacement ? referenceRect[len] / 2 - additive - arrowLen - arrowPaddingMin - normalizedTetherOffsetValue.mainAxis : minLen - arrowLen - arrowPaddingMin - normalizedTetherOffsetValue.mainAxis;
+    var maxOffset = isBasePlacement ? -referenceRect[len] / 2 + additive + arrowLen + arrowPaddingMax + normalizedTetherOffsetValue.mainAxis : maxLen + arrowLen + arrowPaddingMax + normalizedTetherOffsetValue.mainAxis;
+    var arrowOffsetParent = state.elements.arrow && (0,_dom_utils_getOffsetParent_js__WEBPACK_IMPORTED_MODULE_9__["default"])(state.elements.arrow);
+    var clientOffset = arrowOffsetParent ? mainAxis === 'y' ? arrowOffsetParent.clientTop || 0 : arrowOffsetParent.clientLeft || 0 : 0;
+    var offsetModifierValue = (_offsetModifierState$ = offsetModifierState == null ? void 0 : offsetModifierState[mainAxis]) != null ? _offsetModifierState$ : 0;
+    var tetherMin = offset + minOffset - offsetModifierValue - clientOffset;
+    var tetherMax = offset + maxOffset - offsetModifierValue;
+    var preventedOffset = (0,_utils_within_js__WEBPACK_IMPORTED_MODULE_8__.within)(tether ? (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_10__.min)(min, tetherMin) : min, offset, tether ? (0,_utils_math_js__WEBPACK_IMPORTED_MODULE_10__.max)(max, tetherMax) : max);
+    popperOffsets[mainAxis] = preventedOffset;
+    data[mainAxis] = preventedOffset - offset;
+  }
+
+  if (checkAltAxis) {
+    var _offsetModifierState$2;
+
+    var _mainSide = mainAxis === 'x' ? _enums_js__WEBPACK_IMPORTED_MODULE_5__.top : _enums_js__WEBPACK_IMPORTED_MODULE_5__.left;
+
+    var _altSide = mainAxis === 'x' ? _enums_js__WEBPACK_IMPORTED_MODULE_5__.bottom : _enums_js__WEBPACK_IMPORTED_MODULE_5__.right;
+
+    var _offset = popperOffsets[altAxis];
+
+    var _len = altAxis === 'y' ? 'height' : 'width';
+
+    var _min = _offset + overflow[_mainSide];
+
+    var _max = _offset - overflow[_altSide];
+
+    var isOriginSide = [_enums_js__WEBPACK_IMPORTED_MODULE_5__.top, _enums_js__WEBPACK_IMPORTED_MODULE_5__.left].indexOf(basePlacement) !== -1;
+
+    var _offsetModifierValue = (_offsetModifierState$2 = offsetModifierState == null ? void 0 : offsetModifierState[altAxis]) != null ? _offsetModifierState$2 : 0;
+
+    var _tetherMin = isOriginSide ? _min : _offset - referenceRect[_len] - popperRect[_len] - _offsetModifierValue + normalizedTetherOffsetValue.altAxis;
+
+    var _tetherMax = isOriginSide ? _offset + referenceRect[_len] + popperRect[_len] - _offsetModifierValue - normalizedTetherOffsetValue.altAxis : _max;
+
+    var _preventedOffset = tether && isOriginSide ? (0,_utils_within_js__WEBPACK_IMPORTED_MODULE_8__.withinMaxClamp)(_tetherMin, _offset, _tetherMax) : (0,_utils_within_js__WEBPACK_IMPORTED_MODULE_8__.within)(tether ? _tetherMin : _min, _offset, tether ? _tetherMax : _max);
+
+    popperOffsets[altAxis] = _preventedOffset;
+    data[altAxis] = _preventedOffset - _offset;
+  }
+
+  state.modifiersData[name] = data;
+} // eslint-disable-next-line import/no-unused-modules
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'preventOverflow',
+  enabled: true,
+  phase: 'main',
+  fn: preventOverflow,
+  requiresIfExists: ['offset']
+});
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/computeAutoPlacement.js":
+/*!***********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/computeAutoPlacement.js ***!
+  \***********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ computeAutoPlacement)
+/* harmony export */ });
+/* harmony import */ var _getVariation_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getVariation.js */ "./node_modules/@popperjs/core/lib/utils/getVariation.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _detectOverflow_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./detectOverflow.js */ "./node_modules/@popperjs/core/lib/utils/detectOverflow.js");
+/* harmony import */ var _getBasePlacement_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+
+
+
+
+function computeAutoPlacement(state, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _options = options,
+      placement = _options.placement,
+      boundary = _options.boundary,
+      rootBoundary = _options.rootBoundary,
+      padding = _options.padding,
+      flipVariations = _options.flipVariations,
+      _options$allowedAutoP = _options.allowedAutoPlacements,
+      allowedAutoPlacements = _options$allowedAutoP === void 0 ? _enums_js__WEBPACK_IMPORTED_MODULE_0__.placements : _options$allowedAutoP;
+  var variation = (0,_getVariation_js__WEBPACK_IMPORTED_MODULE_1__["default"])(placement);
+  var placements = variation ? flipVariations ? _enums_js__WEBPACK_IMPORTED_MODULE_0__.variationPlacements : _enums_js__WEBPACK_IMPORTED_MODULE_0__.variationPlacements.filter(function (placement) {
+    return (0,_getVariation_js__WEBPACK_IMPORTED_MODULE_1__["default"])(placement) === variation;
+  }) : _enums_js__WEBPACK_IMPORTED_MODULE_0__.basePlacements;
+  var allowedPlacements = placements.filter(function (placement) {
+    return allowedAutoPlacements.indexOf(placement) >= 0;
+  });
+
+  if (allowedPlacements.length === 0) {
+    allowedPlacements = placements;
+
+    if (true) {
+      console.error(['Popper: The `allowedAutoPlacements` option did not allow any', 'placements. Ensure the `placement` option matches the variation', 'of the allowed placements.', 'For example, "auto" cannot be used to allow "bottom-start".', 'Use "auto-start" instead.'].join(' '));
+    }
+  } // $FlowFixMe[incompatible-type]: Flow seems to have problems with two array unions...
+
+
+  var overflows = allowedPlacements.reduce(function (acc, placement) {
+    acc[placement] = (0,_detectOverflow_js__WEBPACK_IMPORTED_MODULE_2__["default"])(state, {
+      placement: placement,
+      boundary: boundary,
+      rootBoundary: rootBoundary,
+      padding: padding
+    })[(0,_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_3__["default"])(placement)];
+    return acc;
+  }, {});
+  return Object.keys(overflows).sort(function (a, b) {
+    return overflows[a] - overflows[b];
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/computeOffsets.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/computeOffsets.js ***!
+  \*****************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ computeOffsets)
+/* harmony export */ });
+/* harmony import */ var _getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getBasePlacement.js */ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js");
+/* harmony import */ var _getVariation_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./getVariation.js */ "./node_modules/@popperjs/core/lib/utils/getVariation.js");
+/* harmony import */ var _getMainAxisFromPlacement_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./getMainAxisFromPlacement.js */ "./node_modules/@popperjs/core/lib/utils/getMainAxisFromPlacement.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+
+
+
+
+function computeOffsets(_ref) {
+  var reference = _ref.reference,
+      element = _ref.element,
+      placement = _ref.placement;
+  var basePlacement = placement ? (0,_getBasePlacement_js__WEBPACK_IMPORTED_MODULE_0__["default"])(placement) : null;
+  var variation = placement ? (0,_getVariation_js__WEBPACK_IMPORTED_MODULE_1__["default"])(placement) : null;
+  var commonX = reference.x + reference.width / 2 - element.width / 2;
+  var commonY = reference.y + reference.height / 2 - element.height / 2;
+  var offsets;
+
+  switch (basePlacement) {
+    case _enums_js__WEBPACK_IMPORTED_MODULE_2__.top:
+      offsets = {
+        x: commonX,
+        y: reference.y - element.height
+      };
+      break;
+
+    case _enums_js__WEBPACK_IMPORTED_MODULE_2__.bottom:
+      offsets = {
+        x: commonX,
+        y: reference.y + reference.height
+      };
+      break;
+
+    case _enums_js__WEBPACK_IMPORTED_MODULE_2__.right:
+      offsets = {
+        x: reference.x + reference.width,
+        y: commonY
+      };
+      break;
+
+    case _enums_js__WEBPACK_IMPORTED_MODULE_2__.left:
+      offsets = {
+        x: reference.x - element.width,
+        y: commonY
+      };
+      break;
+
+    default:
+      offsets = {
+        x: reference.x,
+        y: reference.y
+      };
+  }
+
+  var mainAxis = basePlacement ? (0,_getMainAxisFromPlacement_js__WEBPACK_IMPORTED_MODULE_3__["default"])(basePlacement) : null;
+
+  if (mainAxis != null) {
+    var len = mainAxis === 'y' ? 'height' : 'width';
+
+    switch (variation) {
+      case _enums_js__WEBPACK_IMPORTED_MODULE_2__.start:
+        offsets[mainAxis] = offsets[mainAxis] - (reference[len] / 2 - element[len] / 2);
+        break;
+
+      case _enums_js__WEBPACK_IMPORTED_MODULE_2__.end:
+        offsets[mainAxis] = offsets[mainAxis] + (reference[len] / 2 - element[len] / 2);
+        break;
+
+      default:
+    }
+  }
+
+  return offsets;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/debounce.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/debounce.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ debounce)
+/* harmony export */ });
+function debounce(fn) {
+  var pending;
+  return function () {
+    if (!pending) {
+      pending = new Promise(function (resolve) {
+        Promise.resolve().then(function () {
+          pending = undefined;
+          resolve(fn());
+        });
+      });
+    }
+
+    return pending;
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/detectOverflow.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/detectOverflow.js ***!
+  \*****************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ detectOverflow)
+/* harmony export */ });
+/* harmony import */ var _dom_utils_getClippingRect_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../dom-utils/getClippingRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getClippingRect.js");
+/* harmony import */ var _dom_utils_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../dom-utils/getDocumentElement.js */ "./node_modules/@popperjs/core/lib/dom-utils/getDocumentElement.js");
+/* harmony import */ var _dom_utils_getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../dom-utils/getBoundingClientRect.js */ "./node_modules/@popperjs/core/lib/dom-utils/getBoundingClientRect.js");
+/* harmony import */ var _computeOffsets_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./computeOffsets.js */ "./node_modules/@popperjs/core/lib/utils/computeOffsets.js");
+/* harmony import */ var _rectToClientRect_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./rectToClientRect.js */ "./node_modules/@popperjs/core/lib/utils/rectToClientRect.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _dom_utils_instanceOf_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../dom-utils/instanceOf.js */ "./node_modules/@popperjs/core/lib/dom-utils/instanceOf.js");
+/* harmony import */ var _mergePaddingObject_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./mergePaddingObject.js */ "./node_modules/@popperjs/core/lib/utils/mergePaddingObject.js");
+/* harmony import */ var _expandToHashMap_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./expandToHashMap.js */ "./node_modules/@popperjs/core/lib/utils/expandToHashMap.js");
+
+
+
+
+
+
+
+
+ // eslint-disable-next-line import/no-unused-modules
+
+function detectOverflow(state, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _options = options,
+      _options$placement = _options.placement,
+      placement = _options$placement === void 0 ? state.placement : _options$placement,
+      _options$strategy = _options.strategy,
+      strategy = _options$strategy === void 0 ? state.strategy : _options$strategy,
+      _options$boundary = _options.boundary,
+      boundary = _options$boundary === void 0 ? _enums_js__WEBPACK_IMPORTED_MODULE_0__.clippingParents : _options$boundary,
+      _options$rootBoundary = _options.rootBoundary,
+      rootBoundary = _options$rootBoundary === void 0 ? _enums_js__WEBPACK_IMPORTED_MODULE_0__.viewport : _options$rootBoundary,
+      _options$elementConte = _options.elementContext,
+      elementContext = _options$elementConte === void 0 ? _enums_js__WEBPACK_IMPORTED_MODULE_0__.popper : _options$elementConte,
+      _options$altBoundary = _options.altBoundary,
+      altBoundary = _options$altBoundary === void 0 ? false : _options$altBoundary,
+      _options$padding = _options.padding,
+      padding = _options$padding === void 0 ? 0 : _options$padding;
+  var paddingObject = (0,_mergePaddingObject_js__WEBPACK_IMPORTED_MODULE_1__["default"])(typeof padding !== 'number' ? padding : (0,_expandToHashMap_js__WEBPACK_IMPORTED_MODULE_2__["default"])(padding, _enums_js__WEBPACK_IMPORTED_MODULE_0__.basePlacements));
+  var altContext = elementContext === _enums_js__WEBPACK_IMPORTED_MODULE_0__.popper ? _enums_js__WEBPACK_IMPORTED_MODULE_0__.reference : _enums_js__WEBPACK_IMPORTED_MODULE_0__.popper;
+  var popperRect = state.rects.popper;
+  var element = state.elements[altBoundary ? altContext : elementContext];
+  var clippingClientRect = (0,_dom_utils_getClippingRect_js__WEBPACK_IMPORTED_MODULE_3__["default"])((0,_dom_utils_instanceOf_js__WEBPACK_IMPORTED_MODULE_4__.isElement)(element) ? element : element.contextElement || (0,_dom_utils_getDocumentElement_js__WEBPACK_IMPORTED_MODULE_5__["default"])(state.elements.popper), boundary, rootBoundary, strategy);
+  var referenceClientRect = (0,_dom_utils_getBoundingClientRect_js__WEBPACK_IMPORTED_MODULE_6__["default"])(state.elements.reference);
+  var popperOffsets = (0,_computeOffsets_js__WEBPACK_IMPORTED_MODULE_7__["default"])({
+    reference: referenceClientRect,
+    element: popperRect,
+    strategy: 'absolute',
+    placement: placement
+  });
+  var popperClientRect = (0,_rectToClientRect_js__WEBPACK_IMPORTED_MODULE_8__["default"])(Object.assign({}, popperRect, popperOffsets));
+  var elementClientRect = elementContext === _enums_js__WEBPACK_IMPORTED_MODULE_0__.popper ? popperClientRect : referenceClientRect; // positive = overflowing the clipping rect
+  // 0 or negative = within the clipping rect
+
+  var overflowOffsets = {
+    top: clippingClientRect.top - elementClientRect.top + paddingObject.top,
+    bottom: elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom,
+    left: clippingClientRect.left - elementClientRect.left + paddingObject.left,
+    right: elementClientRect.right - clippingClientRect.right + paddingObject.right
+  };
+  var offsetData = state.modifiersData.offset; // Offsets can be applied only to the popper element
+
+  if (elementContext === _enums_js__WEBPACK_IMPORTED_MODULE_0__.popper && offsetData) {
+    var offset = offsetData[placement];
+    Object.keys(overflowOffsets).forEach(function (key) {
+      var multiply = [_enums_js__WEBPACK_IMPORTED_MODULE_0__.right, _enums_js__WEBPACK_IMPORTED_MODULE_0__.bottom].indexOf(key) >= 0 ? 1 : -1;
+      var axis = [_enums_js__WEBPACK_IMPORTED_MODULE_0__.top, _enums_js__WEBPACK_IMPORTED_MODULE_0__.bottom].indexOf(key) >= 0 ? 'y' : 'x';
+      overflowOffsets[key] += offset[axis] * multiply;
+    });
+  }
+
+  return overflowOffsets;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/expandToHashMap.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/expandToHashMap.js ***!
+  \******************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ expandToHashMap)
+/* harmony export */ });
+function expandToHashMap(value, keys) {
+  return keys.reduce(function (hashMap, key) {
+    hashMap[key] = value;
+    return hashMap;
+  }, {});
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/format.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/format.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ format)
+/* harmony export */ });
+function format(str) {
+  for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  return [].concat(args).reduce(function (p, c) {
+    return p.replace(/%s/, c);
+  }, str);
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/getAltAxis.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/getAltAxis.js ***!
+  \*************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getAltAxis)
+/* harmony export */ });
+function getAltAxis(axis) {
+  return axis === 'x' ? 'y' : 'x';
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/getBasePlacement.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/getBasePlacement.js ***!
+  \*******************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getBasePlacement)
+/* harmony export */ });
+
+function getBasePlacement(placement) {
+  return placement.split('-')[0];
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/getFreshSideObject.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/getFreshSideObject.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getFreshSideObject)
+/* harmony export */ });
+function getFreshSideObject() {
+  return {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0
+  };
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/getMainAxisFromPlacement.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/getMainAxisFromPlacement.js ***!
+  \***************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getMainAxisFromPlacement)
+/* harmony export */ });
+function getMainAxisFromPlacement(placement) {
+  return ['top', 'bottom'].indexOf(placement) >= 0 ? 'x' : 'y';
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/getOppositePlacement.js":
+/*!***********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/getOppositePlacement.js ***!
+  \***********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getOppositePlacement)
+/* harmony export */ });
+var hash = {
+  left: 'right',
+  right: 'left',
+  bottom: 'top',
+  top: 'bottom'
+};
+function getOppositePlacement(placement) {
+  return placement.replace(/left|right|bottom|top/g, function (matched) {
+    return hash[matched];
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/getOppositeVariationPlacement.js":
+/*!********************************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/getOppositeVariationPlacement.js ***!
+  \********************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getOppositeVariationPlacement)
+/* harmony export */ });
+var hash = {
+  start: 'end',
+  end: 'start'
+};
+function getOppositeVariationPlacement(placement) {
+  return placement.replace(/start|end/g, function (matched) {
+    return hash[matched];
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/getVariation.js":
+/*!***************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/getVariation.js ***!
+  \***************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getVariation)
+/* harmony export */ });
+function getVariation(placement) {
+  return placement.split('-')[1];
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/math.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/math.js ***!
+  \*******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "max": () => (/* binding */ max),
+/* harmony export */   "min": () => (/* binding */ min),
+/* harmony export */   "round": () => (/* binding */ round)
+/* harmony export */ });
+var max = Math.max;
+var min = Math.min;
+var round = Math.round;
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/mergeByName.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/mergeByName.js ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ mergeByName)
+/* harmony export */ });
+function mergeByName(modifiers) {
+  var merged = modifiers.reduce(function (merged, current) {
+    var existing = merged[current.name];
+    merged[current.name] = existing ? Object.assign({}, existing, current, {
+      options: Object.assign({}, existing.options, current.options),
+      data: Object.assign({}, existing.data, current.data)
+    }) : current;
+    return merged;
+  }, {}); // IE11 does not support Object.values
+
+  return Object.keys(merged).map(function (key) {
+    return merged[key];
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/mergePaddingObject.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/mergePaddingObject.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ mergePaddingObject)
+/* harmony export */ });
+/* harmony import */ var _getFreshSideObject_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./getFreshSideObject.js */ "./node_modules/@popperjs/core/lib/utils/getFreshSideObject.js");
+
+function mergePaddingObject(paddingObject) {
+  return Object.assign({}, (0,_getFreshSideObject_js__WEBPACK_IMPORTED_MODULE_0__["default"])(), paddingObject);
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/orderModifiers.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/orderModifiers.js ***!
+  \*****************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ orderModifiers)
+/* harmony export */ });
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+ // source: https://stackoverflow.com/questions/49875255
+
+function order(modifiers) {
+  var map = new Map();
+  var visited = new Set();
+  var result = [];
+  modifiers.forEach(function (modifier) {
+    map.set(modifier.name, modifier);
+  }); // On visiting object, check for its dependencies and visit them recursively
+
+  function sort(modifier) {
+    visited.add(modifier.name);
+    var requires = [].concat(modifier.requires || [], modifier.requiresIfExists || []);
+    requires.forEach(function (dep) {
+      if (!visited.has(dep)) {
+        var depModifier = map.get(dep);
+
+        if (depModifier) {
+          sort(depModifier);
+        }
+      }
+    });
+    result.push(modifier);
+  }
+
+  modifiers.forEach(function (modifier) {
+    if (!visited.has(modifier.name)) {
+      // check for visited object
+      sort(modifier);
+    }
+  });
+  return result;
+}
+
+function orderModifiers(modifiers) {
+  // order based on dependencies
+  var orderedModifiers = order(modifiers); // order based on phase
+
+  return _enums_js__WEBPACK_IMPORTED_MODULE_0__.modifierPhases.reduce(function (acc, phase) {
+    return acc.concat(orderedModifiers.filter(function (modifier) {
+      return modifier.phase === phase;
+    }));
+  }, []);
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/rectToClientRect.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/rectToClientRect.js ***!
+  \*******************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ rectToClientRect)
+/* harmony export */ });
+function rectToClientRect(rect) {
+  return Object.assign({}, rect, {
+    left: rect.x,
+    top: rect.y,
+    right: rect.x + rect.width,
+    bottom: rect.y + rect.height
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/uniqueBy.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/uniqueBy.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ uniqueBy)
+/* harmony export */ });
+function uniqueBy(arr, fn) {
+  var identifiers = new Set();
+  return arr.filter(function (item) {
+    var identifier = fn(item);
+
+    if (!identifiers.has(identifier)) {
+      identifiers.add(identifier);
+      return true;
+    }
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/userAgent.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/userAgent.js ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ getUAString)
+/* harmony export */ });
+function getUAString() {
+  var uaData = navigator.userAgentData;
+
+  if (uaData != null && uaData.brands) {
+    return uaData.brands.map(function (item) {
+      return item.brand + "/" + item.version;
+    }).join(' ');
+  }
+
+  return navigator.userAgent;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/validateModifiers.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/validateModifiers.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ validateModifiers)
+/* harmony export */ });
+/* harmony import */ var _format_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./format.js */ "./node_modules/@popperjs/core/lib/utils/format.js");
+/* harmony import */ var _enums_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../enums.js */ "./node_modules/@popperjs/core/lib/enums.js");
+
+
+var INVALID_MODIFIER_ERROR = 'Popper: modifier "%s" provided an invalid %s property, expected %s but got %s';
+var MISSING_DEPENDENCY_ERROR = 'Popper: modifier "%s" requires "%s", but "%s" modifier is not available';
+var VALID_PROPERTIES = ['name', 'enabled', 'phase', 'fn', 'effect', 'requires', 'options'];
+function validateModifiers(modifiers) {
+  modifiers.forEach(function (modifier) {
+    [].concat(Object.keys(modifier), VALID_PROPERTIES) // IE11-compatible replacement for `new Set(iterable)`
+    .filter(function (value, index, self) {
+      return self.indexOf(value) === index;
+    }).forEach(function (key) {
+      switch (key) {
+        case 'name':
+          if (typeof modifier.name !== 'string') {
+            console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(INVALID_MODIFIER_ERROR, String(modifier.name), '"name"', '"string"', "\"" + String(modifier.name) + "\""));
+          }
+
+          break;
+
+        case 'enabled':
+          if (typeof modifier.enabled !== 'boolean') {
+            console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(INVALID_MODIFIER_ERROR, modifier.name, '"enabled"', '"boolean"', "\"" + String(modifier.enabled) + "\""));
+          }
+
+          break;
+
+        case 'phase':
+          if (_enums_js__WEBPACK_IMPORTED_MODULE_1__.modifierPhases.indexOf(modifier.phase) < 0) {
+            console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(INVALID_MODIFIER_ERROR, modifier.name, '"phase"', "either " + _enums_js__WEBPACK_IMPORTED_MODULE_1__.modifierPhases.join(', '), "\"" + String(modifier.phase) + "\""));
+          }
+
+          break;
+
+        case 'fn':
+          if (typeof modifier.fn !== 'function') {
+            console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(INVALID_MODIFIER_ERROR, modifier.name, '"fn"', '"function"', "\"" + String(modifier.fn) + "\""));
+          }
+
+          break;
+
+        case 'effect':
+          if (modifier.effect != null && typeof modifier.effect !== 'function') {
+            console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(INVALID_MODIFIER_ERROR, modifier.name, '"effect"', '"function"', "\"" + String(modifier.fn) + "\""));
+          }
+
+          break;
+
+        case 'requires':
+          if (modifier.requires != null && !Array.isArray(modifier.requires)) {
+            console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(INVALID_MODIFIER_ERROR, modifier.name, '"requires"', '"array"', "\"" + String(modifier.requires) + "\""));
+          }
+
+          break;
+
+        case 'requiresIfExists':
+          if (!Array.isArray(modifier.requiresIfExists)) {
+            console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(INVALID_MODIFIER_ERROR, modifier.name, '"requiresIfExists"', '"array"', "\"" + String(modifier.requiresIfExists) + "\""));
+          }
+
+          break;
+
+        case 'options':
+        case 'data':
+          break;
+
+        default:
+          console.error("PopperJS: an invalid property has been provided to the \"" + modifier.name + "\" modifier, valid properties are " + VALID_PROPERTIES.map(function (s) {
+            return "\"" + s + "\"";
+          }).join(', ') + "; but \"" + key + "\" was provided.");
+      }
+
+      modifier.requires && modifier.requires.forEach(function (requirement) {
+        if (modifiers.find(function (mod) {
+          return mod.name === requirement;
+        }) == null) {
+          console.error((0,_format_js__WEBPACK_IMPORTED_MODULE_0__["default"])(MISSING_DEPENDENCY_ERROR, String(modifier.name), requirement, requirement));
+        }
+      });
+    });
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/@popperjs/core/lib/utils/within.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@popperjs/core/lib/utils/within.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "within": () => (/* binding */ within),
+/* harmony export */   "withinMaxClamp": () => (/* binding */ withinMaxClamp)
+/* harmony export */ });
+/* harmony import */ var _math_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./math.js */ "./node_modules/@popperjs/core/lib/utils/math.js");
+
+function within(min, value, max) {
+  return (0,_math_js__WEBPACK_IMPORTED_MODULE_0__.max)(min, (0,_math_js__WEBPACK_IMPORTED_MODULE_0__.min)(value, max));
+}
+function withinMaxClamp(min, value, max) {
+  var v = within(min, value, max);
+  return v > max ? max : v;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@remix-run/router/dist/router.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/@remix-run/router/dist/router.js ***!
+  \*******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "AbortedDeferredError": () => (/* binding */ AbortedDeferredError),
+/* harmony export */   "Action": () => (/* binding */ Action),
+/* harmony export */   "ErrorResponse": () => (/* binding */ ErrorResponse),
+/* harmony export */   "IDLE_FETCHER": () => (/* binding */ IDLE_FETCHER),
+/* harmony export */   "IDLE_NAVIGATION": () => (/* binding */ IDLE_NAVIGATION),
+/* harmony export */   "UNSAFE_convertRoutesToDataRoutes": () => (/* binding */ convertRoutesToDataRoutes),
+/* harmony export */   "UNSAFE_getPathContributingMatches": () => (/* binding */ getPathContributingMatches),
+/* harmony export */   "createBrowserHistory": () => (/* binding */ createBrowserHistory),
+/* harmony export */   "createHashHistory": () => (/* binding */ createHashHistory),
+/* harmony export */   "createMemoryHistory": () => (/* binding */ createMemoryHistory),
+/* harmony export */   "createPath": () => (/* binding */ createPath),
+/* harmony export */   "createRouter": () => (/* binding */ createRouter),
+/* harmony export */   "defer": () => (/* binding */ defer),
+/* harmony export */   "generatePath": () => (/* binding */ generatePath),
+/* harmony export */   "getStaticContextFromError": () => (/* binding */ getStaticContextFromError),
+/* harmony export */   "getToPathname": () => (/* binding */ getToPathname),
+/* harmony export */   "invariant": () => (/* binding */ invariant),
+/* harmony export */   "isRouteErrorResponse": () => (/* binding */ isRouteErrorResponse),
+/* harmony export */   "joinPaths": () => (/* binding */ joinPaths),
+/* harmony export */   "json": () => (/* binding */ json),
+/* harmony export */   "matchPath": () => (/* binding */ matchPath),
+/* harmony export */   "matchRoutes": () => (/* binding */ matchRoutes),
+/* harmony export */   "normalizePathname": () => (/* binding */ normalizePathname),
+/* harmony export */   "parsePath": () => (/* binding */ parsePath),
+/* harmony export */   "redirect": () => (/* binding */ redirect),
+/* harmony export */   "resolvePath": () => (/* binding */ resolvePath),
+/* harmony export */   "resolveTo": () => (/* binding */ resolveTo),
+/* harmony export */   "stripBasename": () => (/* binding */ stripBasename),
+/* harmony export */   "unstable_createStaticHandler": () => (/* binding */ unstable_createStaticHandler),
+/* harmony export */   "warning": () => (/* binding */ warning)
+/* harmony export */ });
+/**
+ * @remix-run/router v1.0.3
+ *
+ * Copyright (c) Remix Software Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.md file in the root directory of this source tree.
+ *
+ * @license MIT
+ */
+function _extends() {
+  _extends = Object.assign ? Object.assign.bind() : function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+  return _extends.apply(this, arguments);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//#region Types and Constants
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Actions represent the type of change to a location value.
+ */
+var Action;
+
+(function (Action) {
+  /**
+   * A POP indicates a change to an arbitrary index in the history stack, such
+   * as a back or forward navigation. It does not describe the direction of the
+   * navigation, only that the current index changed.
+   *
+   * Note: This is the default action for newly created history objects.
+   */
+  Action["Pop"] = "POP";
+  /**
+   * A PUSH indicates a new entry being added to the history stack, such as when
+   * a link is clicked and a new page loads. When this happens, all subsequent
+   * entries in the stack are lost.
+   */
+
+  Action["Push"] = "PUSH";
+  /**
+   * A REPLACE indicates the entry at the current index in the history stack
+   * being replaced by a new one.
+   */
+
+  Action["Replace"] = "REPLACE";
+})(Action || (Action = {}));
+
+const PopStateEventType = "popstate";
+/**
+ * Memory history stores the current location in memory. It is designed for use
+ * in stateful non-browser environments like tests and React Native.
+ */
+
+function createMemoryHistory(options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  let {
+    initialEntries = ["/"],
+    initialIndex,
+    v5Compat = false
+  } = options;
+  let entries; // Declare so we can access from createMemoryLocation
+
+  entries = initialEntries.map((entry, index) => createMemoryLocation(entry, typeof entry === "string" ? null : entry.state, index === 0 ? "default" : undefined));
+  let index = clampIndex(initialIndex == null ? entries.length - 1 : initialIndex);
+  let action = Action.Pop;
+  let listener = null;
+
+  function clampIndex(n) {
+    return Math.min(Math.max(n, 0), entries.length - 1);
+  }
+
+  function getCurrentLocation() {
+    return entries[index];
+  }
+
+  function createMemoryLocation(to, state, key) {
+    if (state === void 0) {
+      state = null;
+    }
+
+    let location = createLocation(entries ? getCurrentLocation().pathname : "/", to, state, key);
+    warning$1(location.pathname.charAt(0) === "/", "relative pathnames are not supported in memory history: " + JSON.stringify(to));
+    return location;
+  }
+
+  let history = {
+    get index() {
+      return index;
+    },
+
+    get action() {
+      return action;
+    },
+
+    get location() {
+      return getCurrentLocation();
+    },
+
+    createHref(to) {
+      return typeof to === "string" ? to : createPath(to);
+    },
+
+    encodeLocation(location) {
+      return location;
+    },
+
+    push(to, state) {
+      action = Action.Push;
+      let nextLocation = createMemoryLocation(to, state);
+      index += 1;
+      entries.splice(index, entries.length, nextLocation);
+
+      if (v5Compat && listener) {
+        listener({
+          action,
+          location: nextLocation
+        });
+      }
+    },
+
+    replace(to, state) {
+      action = Action.Replace;
+      let nextLocation = createMemoryLocation(to, state);
+      entries[index] = nextLocation;
+
+      if (v5Compat && listener) {
+        listener({
+          action,
+          location: nextLocation
+        });
+      }
+    },
+
+    go(delta) {
+      action = Action.Pop;
+      index = clampIndex(index + delta);
+
+      if (listener) {
+        listener({
+          action,
+          location: getCurrentLocation()
+        });
+      }
+    },
+
+    listen(fn) {
+      listener = fn;
+      return () => {
+        listener = null;
+      };
+    }
+
+  };
+  return history;
+}
+/**
+ * Browser history stores the location in regular URLs. This is the standard for
+ * most web apps, but it requires some configuration on the server to ensure you
+ * serve the same app at multiple URLs.
+ *
+ * @see https://github.com/remix-run/history/tree/main/docs/api-reference.md#createbrowserhistory
+ */
+
+function createBrowserHistory(options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  function createBrowserLocation(window, globalHistory) {
+    let {
+      pathname,
+      search,
+      hash
+    } = window.location;
+    return createLocation("", {
+      pathname,
+      search,
+      hash
+    }, // state defaults to `null` because `window.history.state` does
+    globalHistory.state && globalHistory.state.usr || null, globalHistory.state && globalHistory.state.key || "default");
+  }
+
+  function createBrowserHref(window, to) {
+    return typeof to === "string" ? to : createPath(to);
+  }
+
+  return getUrlBasedHistory(createBrowserLocation, createBrowserHref, null, options);
+}
+/**
+ * Hash history stores the location in window.location.hash. This makes it ideal
+ * for situations where you don't want to send the location to the server for
+ * some reason, either because you do cannot configure it or the URL space is
+ * reserved for something else.
+ *
+ * @see https://github.com/remix-run/history/tree/main/docs/api-reference.md#createhashhistory
+ */
+
+function createHashHistory(options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  function createHashLocation(window, globalHistory) {
+    let {
+      pathname = "/",
+      search = "",
+      hash = ""
+    } = parsePath(window.location.hash.substr(1));
+    return createLocation("", {
+      pathname,
+      search,
+      hash
+    }, // state defaults to `null` because `window.history.state` does
+    globalHistory.state && globalHistory.state.usr || null, globalHistory.state && globalHistory.state.key || "default");
+  }
+
+  function createHashHref(window, to) {
+    let base = window.document.querySelector("base");
+    let href = "";
+
+    if (base && base.getAttribute("href")) {
+      let url = window.location.href;
+      let hashIndex = url.indexOf("#");
+      href = hashIndex === -1 ? url : url.slice(0, hashIndex);
+    }
+
+    return href + "#" + (typeof to === "string" ? to : createPath(to));
+  }
+
+  function validateHashLocation(location, to) {
+    warning$1(location.pathname.charAt(0) === "/", "relative pathnames are not supported in hash history.push(" + JSON.stringify(to) + ")");
+  }
+
+  return getUrlBasedHistory(createHashLocation, createHashHref, validateHashLocation, options);
+} //#endregion
+////////////////////////////////////////////////////////////////////////////////
+//#region UTILS
+////////////////////////////////////////////////////////////////////////////////
+
+function warning$1(cond, message) {
+  if (!cond) {
+    // eslint-disable-next-line no-console
+    if (typeof console !== "undefined") console.warn(message);
+
+    try {
+      // Welcome to debugging history!
+      //
+      // This error is thrown as a convenience so you can more easily
+      // find the source for a warning that appears in the console by
+      // enabling "pause on exceptions" in your JavaScript debugger.
+      throw new Error(message); // eslint-disable-next-line no-empty
+    } catch (e) {}
+  }
+}
+
+function createKey() {
+  return Math.random().toString(36).substr(2, 8);
+}
+/**
+ * For browser-based histories, we combine the state and key into an object
+ */
+
+
+function getHistoryState(location) {
+  return {
+    usr: location.state,
+    key: location.key
+  };
+}
+/**
+ * Creates a Location object with a unique key from the given Path
+ */
+
+
+function createLocation(current, to, state, key) {
+  if (state === void 0) {
+    state = null;
+  }
+
+  let location = _extends({
+    pathname: typeof current === "string" ? current : current.pathname,
+    search: "",
+    hash: ""
+  }, typeof to === "string" ? parsePath(to) : to, {
+    state,
+    // TODO: This could be cleaned up.  push/replace should probably just take
+    // full Locations now and avoid the need to run through this flow at all
+    // But that's a pretty big refactor to the current test suite so going to
+    // keep as is for the time being and just let any incoming keys take precedence
+    key: to && to.key || key || createKey()
+  });
+
+  return location;
+}
+/**
+ * Creates a string URL path from the given pathname, search, and hash components.
+ */
+
+function createPath(_ref) {
+  let {
+    pathname = "/",
+    search = "",
+    hash = ""
+  } = _ref;
+  if (search && search !== "?") pathname += search.charAt(0) === "?" ? search : "?" + search;
+  if (hash && hash !== "#") pathname += hash.charAt(0) === "#" ? hash : "#" + hash;
+  return pathname;
+}
+/**
+ * Parses a string URL path into its separate pathname, search, and hash components.
+ */
+
+function parsePath(path) {
+  let parsedPath = {};
+
+  if (path) {
+    let hashIndex = path.indexOf("#");
+
+    if (hashIndex >= 0) {
+      parsedPath.hash = path.substr(hashIndex);
+      path = path.substr(0, hashIndex);
+    }
+
+    let searchIndex = path.indexOf("?");
+
+    if (searchIndex >= 0) {
+      parsedPath.search = path.substr(searchIndex);
+      path = path.substr(0, searchIndex);
+    }
+
+    if (path) {
+      parsedPath.pathname = path;
+    }
+  }
+
+  return parsedPath;
+}
+function createURL(location) {
+  // window.location.origin is "null" (the literal string value) in Firefox
+  // under certain conditions, notably when serving from a local HTML file
+  // See https://bugzilla.mozilla.org/show_bug.cgi?id=878297
+  let base = typeof window !== "undefined" && typeof window.location !== "undefined" && window.location.origin !== "null" ? window.location.origin : "unknown://unknown";
+  let href = typeof location === "string" ? location : createPath(location);
+  return new URL(href, base);
+}
+
+function getUrlBasedHistory(getLocation, createHref, validateLocation, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  let {
+    window = document.defaultView,
+    v5Compat = false
+  } = options;
+  let globalHistory = window.history;
+  let action = Action.Pop;
+  let listener = null;
+
+  function handlePop() {
+    action = Action.Pop;
+
+    if (listener) {
+      listener({
+        action,
+        location: history.location
+      });
+    }
+  }
+
+  function push(to, state) {
+    action = Action.Push;
+    let location = createLocation(history.location, to, state);
+    if (validateLocation) validateLocation(location, to);
+    let historyState = getHistoryState(location);
+    let url = history.createHref(location); // try...catch because iOS limits us to 100 pushState calls :/
+
+    try {
+      globalHistory.pushState(historyState, "", url);
+    } catch (error) {
+      // They are going to lose state here, but there is no real
+      // way to warn them about it since the page will refresh...
+      window.location.assign(url);
+    }
+
+    if (v5Compat && listener) {
+      listener({
+        action,
+        location: history.location
+      });
+    }
+  }
+
+  function replace(to, state) {
+    action = Action.Replace;
+    let location = createLocation(history.location, to, state);
+    if (validateLocation) validateLocation(location, to);
+    let historyState = getHistoryState(location);
+    let url = history.createHref(location);
+    globalHistory.replaceState(historyState, "", url);
+
+    if (v5Compat && listener) {
+      listener({
+        action,
+        location: history.location
+      });
+    }
+  }
+
+  let history = {
+    get action() {
+      return action;
+    },
+
+    get location() {
+      return getLocation(window, globalHistory);
+    },
+
+    listen(fn) {
+      if (listener) {
+        throw new Error("A history only accepts one active listener");
+      }
+
+      window.addEventListener(PopStateEventType, handlePop);
+      listener = fn;
+      return () => {
+        window.removeEventListener(PopStateEventType, handlePop);
+        listener = null;
+      };
+    },
+
+    createHref(to) {
+      return createHref(window, to);
+    },
+
+    encodeLocation(location) {
+      // Encode a Location the same way window.location would
+      let url = createURL(createPath(location));
+      return _extends({}, location, {
+        pathname: url.pathname,
+        search: url.search,
+        hash: url.hash
+      });
+    },
+
+    push,
+    replace,
+
+    go(n) {
+      return globalHistory.go(n);
+    }
+
+  };
+  return history;
+} //#endregion
+
+var ResultType;
+
+(function (ResultType) {
+  ResultType["data"] = "data";
+  ResultType["deferred"] = "deferred";
+  ResultType["redirect"] = "redirect";
+  ResultType["error"] = "error";
+})(ResultType || (ResultType = {}));
+
+function isIndexRoute(route) {
+  return route.index === true;
+} // Walk the route tree generating unique IDs where necessary so we are working
+// solely with AgnosticDataRouteObject's within the Router
+
+
+function convertRoutesToDataRoutes(routes, parentPath, allIds) {
+  if (parentPath === void 0) {
+    parentPath = [];
+  }
+
+  if (allIds === void 0) {
+    allIds = new Set();
+  }
+
+  return routes.map((route, index) => {
+    let treePath = [...parentPath, index];
+    let id = typeof route.id === "string" ? route.id : treePath.join("-");
+    invariant(route.index !== true || !route.children, "Cannot specify children on an index route");
+    invariant(!allIds.has(id), "Found a route id collision on id \"" + id + "\".  Route " + "id's must be globally unique within Data Router usages");
+    allIds.add(id);
+
+    if (isIndexRoute(route)) {
+      let indexRoute = _extends({}, route, {
+        id
+      });
+
+      return indexRoute;
+    } else {
+      let pathOrLayoutRoute = _extends({}, route, {
+        id,
+        children: route.children ? convertRoutesToDataRoutes(route.children, treePath, allIds) : undefined
+      });
+
+      return pathOrLayoutRoute;
+    }
+  });
+}
+/**
+ * Matches the given routes to a location and returns the match data.
+ *
+ * @see https://reactrouter.com/docs/en/v6/utils/match-routes
+ */
+
+function matchRoutes(routes, locationArg, basename) {
+  if (basename === void 0) {
+    basename = "/";
+  }
+
+  let location = typeof locationArg === "string" ? parsePath(locationArg) : locationArg;
+  let pathname = stripBasename(location.pathname || "/", basename);
+
+  if (pathname == null) {
+    return null;
+  }
+
+  let branches = flattenRoutes(routes);
+  rankRouteBranches(branches);
+  let matches = null;
+
+  for (let i = 0; matches == null && i < branches.length; ++i) {
+    matches = matchRouteBranch(branches[i], // Incoming pathnames are generally encoded from either window.location
+    // or from router.navigate, but we want to match against the unencoded
+    // paths in the route definitions.  Memory router locations won't be
+    // encoded here but there also shouldn't be anything to decode so this
+    // should be a safe operation.  This avoids needing matchRoutes to be
+    // history-aware.
+    safelyDecodeURI(pathname));
+  }
+
+  return matches;
+}
+
+function flattenRoutes(routes, branches, parentsMeta, parentPath) {
+  if (branches === void 0) {
+    branches = [];
+  }
+
+  if (parentsMeta === void 0) {
+    parentsMeta = [];
+  }
+
+  if (parentPath === void 0) {
+    parentPath = "";
+  }
+
+  routes.forEach((route, index) => {
+    let meta = {
+      relativePath: route.path || "",
+      caseSensitive: route.caseSensitive === true,
+      childrenIndex: index,
+      route
+    };
+
+    if (meta.relativePath.startsWith("/")) {
+      invariant(meta.relativePath.startsWith(parentPath), "Absolute route path \"" + meta.relativePath + "\" nested under path " + ("\"" + parentPath + "\" is not valid. An absolute child route path ") + "must start with the combined path of all its parent routes.");
+      meta.relativePath = meta.relativePath.slice(parentPath.length);
+    }
+
+    let path = joinPaths([parentPath, meta.relativePath]);
+    let routesMeta = parentsMeta.concat(meta); // Add the children before adding this route to the array so we traverse the
+    // route tree depth-first and child routes appear before their parents in
+    // the "flattened" version.
+
+    if (route.children && route.children.length > 0) {
+      invariant( // Our types know better, but runtime JS may not!
+      // @ts-expect-error
+      route.index !== true, "Index routes must not have child routes. Please remove " + ("all child routes from route path \"" + path + "\"."));
+      flattenRoutes(route.children, branches, routesMeta, path);
+    } // Routes without a path shouldn't ever match by themselves unless they are
+    // index routes, so don't add them to the list of possible branches.
+
+
+    if (route.path == null && !route.index) {
+      return;
+    }
+
+    branches.push({
+      path,
+      score: computeScore(path, route.index),
+      routesMeta
+    });
+  });
+  return branches;
+}
+
+function rankRouteBranches(branches) {
+  branches.sort((a, b) => a.score !== b.score ? b.score - a.score // Higher score first
+  : compareIndexes(a.routesMeta.map(meta => meta.childrenIndex), b.routesMeta.map(meta => meta.childrenIndex)));
+}
+
+const paramRe = /^:\w+$/;
+const dynamicSegmentValue = 3;
+const indexRouteValue = 2;
+const emptySegmentValue = 1;
+const staticSegmentValue = 10;
+const splatPenalty = -2;
+
+const isSplat = s => s === "*";
+
+function computeScore(path, index) {
+  let segments = path.split("/");
+  let initialScore = segments.length;
+
+  if (segments.some(isSplat)) {
+    initialScore += splatPenalty;
+  }
+
+  if (index) {
+    initialScore += indexRouteValue;
+  }
+
+  return segments.filter(s => !isSplat(s)).reduce((score, segment) => score + (paramRe.test(segment) ? dynamicSegmentValue : segment === "" ? emptySegmentValue : staticSegmentValue), initialScore);
+}
+
+function compareIndexes(a, b) {
+  let siblings = a.length === b.length && a.slice(0, -1).every((n, i) => n === b[i]);
+  return siblings ? // If two routes are siblings, we should try to match the earlier sibling
+  // first. This allows people to have fine-grained control over the matching
+  // behavior by simply putting routes with identical paths in the order they
+  // want them tried.
+  a[a.length - 1] - b[b.length - 1] : // Otherwise, it doesn't really make sense to rank non-siblings by index,
+  // so they sort equally.
+  0;
+}
+
+function matchRouteBranch(branch, pathname) {
+  let {
+    routesMeta
+  } = branch;
+  let matchedParams = {};
+  let matchedPathname = "/";
+  let matches = [];
+
+  for (let i = 0; i < routesMeta.length; ++i) {
+    let meta = routesMeta[i];
+    let end = i === routesMeta.length - 1;
+    let remainingPathname = matchedPathname === "/" ? pathname : pathname.slice(matchedPathname.length) || "/";
+    let match = matchPath({
+      path: meta.relativePath,
+      caseSensitive: meta.caseSensitive,
+      end
+    }, remainingPathname);
+    if (!match) return null;
+    Object.assign(matchedParams, match.params);
+    let route = meta.route;
+    matches.push({
+      // TODO: Can this as be avoided?
+      params: matchedParams,
+      pathname: joinPaths([matchedPathname, match.pathname]),
+      pathnameBase: normalizePathname(joinPaths([matchedPathname, match.pathnameBase])),
+      route
+    });
+
+    if (match.pathnameBase !== "/") {
+      matchedPathname = joinPaths([matchedPathname, match.pathnameBase]);
+    }
+  }
+
+  return matches;
+}
+/**
+ * Returns a path with params interpolated.
+ *
+ * @see https://reactrouter.com/docs/en/v6/utils/generate-path
+ */
+
+
+function generatePath(path, params) {
+  if (params === void 0) {
+    params = {};
+  }
+
+  return path.replace(/:(\w+)/g, (_, key) => {
+    invariant(params[key] != null, "Missing \":" + key + "\" param");
+    return params[key];
+  }).replace(/(\/?)\*/, (_, prefix, __, str) => {
+    const star = "*";
+
+    if (params[star] == null) {
+      // If no splat was provided, trim the trailing slash _unless_ it's
+      // the entire path
+      return str === "/*" ? "/" : "";
+    } // Apply the splat
+
+
+    return "" + prefix + params[star];
+  });
+}
+/**
+ * Performs pattern matching on a URL pathname and returns information about
+ * the match.
+ *
+ * @see https://reactrouter.com/docs/en/v6/utils/match-path
+ */
+
+function matchPath(pattern, pathname) {
+  if (typeof pattern === "string") {
+    pattern = {
+      path: pattern,
+      caseSensitive: false,
+      end: true
+    };
+  }
+
+  let [matcher, paramNames] = compilePath(pattern.path, pattern.caseSensitive, pattern.end);
+  let match = pathname.match(matcher);
+  if (!match) return null;
+  let matchedPathname = match[0];
+  let pathnameBase = matchedPathname.replace(/(.)\/+$/, "$1");
+  let captureGroups = match.slice(1);
+  let params = paramNames.reduce((memo, paramName, index) => {
+    // We need to compute the pathnameBase here using the raw splat value
+    // instead of using params["*"] later because it will be decoded then
+    if (paramName === "*") {
+      let splatValue = captureGroups[index] || "";
+      pathnameBase = matchedPathname.slice(0, matchedPathname.length - splatValue.length).replace(/(.)\/+$/, "$1");
+    }
+
+    memo[paramName] = safelyDecodeURIComponent(captureGroups[index] || "", paramName);
+    return memo;
+  }, {});
+  return {
+    params,
+    pathname: matchedPathname,
+    pathnameBase,
+    pattern
+  };
+}
+
+function compilePath(path, caseSensitive, end) {
+  if (caseSensitive === void 0) {
+    caseSensitive = false;
+  }
+
+  if (end === void 0) {
+    end = true;
+  }
+
+  warning(path === "*" || !path.endsWith("*") || path.endsWith("/*"), "Route path \"" + path + "\" will be treated as if it were " + ("\"" + path.replace(/\*$/, "/*") + "\" because the `*` character must ") + "always follow a `/` in the pattern. To get rid of this warning, " + ("please change the route path to \"" + path.replace(/\*$/, "/*") + "\"."));
+  let paramNames = [];
+  let regexpSource = "^" + path.replace(/\/*\*?$/, "") // Ignore trailing / and /*, we'll handle it below
+  .replace(/^\/*/, "/") // Make sure it has a leading /
+  .replace(/[\\.*+^$?{}|()[\]]/g, "\\$&") // Escape special regex chars
+  .replace(/:(\w+)/g, (_, paramName) => {
+    paramNames.push(paramName);
+    return "([^\\/]+)";
+  });
+
+  if (path.endsWith("*")) {
+    paramNames.push("*");
+    regexpSource += path === "*" || path === "/*" ? "(.*)$" // Already matched the initial /, just match the rest
+    : "(?:\\/(.+)|\\/*)$"; // Don't include the / in params["*"]
+  } else if (end) {
+    // When matching to the end, ignore trailing slashes
+    regexpSource += "\\/*$";
+  } else if (path !== "" && path !== "/") {
+    // If our path is non-empty and contains anything beyond an initial slash,
+    // then we have _some_ form of path in our regex so we should expect to
+    // match only if we find the end of this path segment.  Look for an optional
+    // non-captured trailing slash (to match a portion of the URL) or the end
+    // of the path (if we've matched to the end).  We used to do this with a
+    // word boundary but that gives false positives on routes like
+    // /user-preferences since `-` counts as a word boundary.
+    regexpSource += "(?:(?=\\/|$))";
+  } else ;
+
+  let matcher = new RegExp(regexpSource, caseSensitive ? undefined : "i");
+  return [matcher, paramNames];
+}
+
+function safelyDecodeURI(value) {
+  try {
+    return decodeURI(value);
+  } catch (error) {
+    warning(false, "The URL path \"" + value + "\" could not be decoded because it is is a " + "malformed URL segment. This is probably due to a bad percent " + ("encoding (" + error + ")."));
+    return value;
+  }
+}
+
+function safelyDecodeURIComponent(value, paramName) {
+  try {
+    return decodeURIComponent(value);
+  } catch (error) {
+    warning(false, "The value for the URL param \"" + paramName + "\" will not be decoded because" + (" the string \"" + value + "\" is a malformed URL segment. This is probably") + (" due to a bad percent encoding (" + error + ")."));
+    return value;
+  }
+}
+/**
+ * @private
+ */
+
+
+function stripBasename(pathname, basename) {
+  if (basename === "/") return pathname;
+
+  if (!pathname.toLowerCase().startsWith(basename.toLowerCase())) {
+    return null;
+  } // We want to leave trailing slash behavior in the user's control, so if they
+  // specify a basename with a trailing slash, we should support it
+
+
+  let startIndex = basename.endsWith("/") ? basename.length - 1 : basename.length;
+  let nextChar = pathname.charAt(startIndex);
+
+  if (nextChar && nextChar !== "/") {
+    // pathname does not start with basename/
+    return null;
+  }
+
+  return pathname.slice(startIndex) || "/";
+}
+function invariant(value, message) {
+  if (value === false || value === null || typeof value === "undefined") {
+    throw new Error(message);
+  }
+}
+/**
+ * @private
+ */
+
+function warning(cond, message) {
+  if (!cond) {
+    // eslint-disable-next-line no-console
+    if (typeof console !== "undefined") console.warn(message);
+
+    try {
+      // Welcome to debugging React Router!
+      //
+      // This error is thrown as a convenience so you can more easily
+      // find the source for a warning that appears in the console by
+      // enabling "pause on exceptions" in your JavaScript debugger.
+      throw new Error(message); // eslint-disable-next-line no-empty
+    } catch (e) {}
+  }
+}
+/**
+ * Returns a resolved path object relative to the given pathname.
+ *
+ * @see https://reactrouter.com/docs/en/v6/utils/resolve-path
+ */
+
+function resolvePath(to, fromPathname) {
+  if (fromPathname === void 0) {
+    fromPathname = "/";
+  }
+
+  let {
+    pathname: toPathname,
+    search = "",
+    hash = ""
+  } = typeof to === "string" ? parsePath(to) : to;
+  let pathname = toPathname ? toPathname.startsWith("/") ? toPathname : resolvePathname(toPathname, fromPathname) : fromPathname;
+  return {
+    pathname,
+    search: normalizeSearch(search),
+    hash: normalizeHash(hash)
+  };
+}
+
+function resolvePathname(relativePath, fromPathname) {
+  let segments = fromPathname.replace(/\/+$/, "").split("/");
+  let relativeSegments = relativePath.split("/");
+  relativeSegments.forEach(segment => {
+    if (segment === "..") {
+      // Keep the root "" segment so the pathname starts at /
+      if (segments.length > 1) segments.pop();
+    } else if (segment !== ".") {
+      segments.push(segment);
+    }
+  });
+  return segments.length > 1 ? segments.join("/") : "/";
+}
+
+function getInvalidPathError(char, field, dest, path) {
+  return "Cannot include a '" + char + "' character in a manually specified " + ("`to." + field + "` field [" + JSON.stringify(path) + "].  Please separate it out to the ") + ("`to." + dest + "` field. Alternatively you may provide the full path as ") + "a string in <Link to=\"...\"> and the router will parse it for you.";
+}
+/**
+ * @private
+ *
+ * When processing relative navigation we want to ignore ancestor routes that
+ * do not contribute to the path, such that index/pathless layout routes don't
+ * interfere.
+ *
+ * For example, when moving a route element into an index route and/or a
+ * pathless layout route, relative link behavior contained within should stay
+ * the same.  Both of the following examples should link back to the root:
+ *
+ *   <Route path="/">
+ *     <Route path="accounts" element={<Link to=".."}>
+ *   </Route>
+ *
+ *   <Route path="/">
+ *     <Route path="accounts">
+ *       <Route element={<AccountsLayout />}>       // <-- Does not contribute
+ *         <Route index element={<Link to=".."} />  // <-- Does not contribute
+ *       </Route
+ *     </Route>
+ *   </Route>
+ */
+
+
+function getPathContributingMatches(matches) {
+  return matches.filter((match, index) => index === 0 || match.route.path && match.route.path.length > 0);
+}
+/**
+ * @private
+ */
+
+function resolveTo(toArg, routePathnames, locationPathname, isPathRelative) {
+  if (isPathRelative === void 0) {
+    isPathRelative = false;
+  }
+
+  let to;
+
+  if (typeof toArg === "string") {
+    to = parsePath(toArg);
+  } else {
+    to = _extends({}, toArg);
+    invariant(!to.pathname || !to.pathname.includes("?"), getInvalidPathError("?", "pathname", "search", to));
+    invariant(!to.pathname || !to.pathname.includes("#"), getInvalidPathError("#", "pathname", "hash", to));
+    invariant(!to.search || !to.search.includes("#"), getInvalidPathError("#", "search", "hash", to));
+  }
+
+  let isEmptyPath = toArg === "" || to.pathname === "";
+  let toPathname = isEmptyPath ? "/" : to.pathname;
+  let from; // Routing is relative to the current pathname if explicitly requested.
+  //
+  // If a pathname is explicitly provided in `to`, it should be relative to the
+  // route context. This is explained in `Note on `<Link to>` values` in our
+  // migration guide from v5 as a means of disambiguation between `to` values
+  // that begin with `/` and those that do not. However, this is problematic for
+  // `to` values that do not provide a pathname. `to` can simply be a search or
+  // hash string, in which case we should assume that the navigation is relative
+  // to the current location's pathname and *not* the route pathname.
+
+  if (isPathRelative || toPathname == null) {
+    from = locationPathname;
+  } else {
+    let routePathnameIndex = routePathnames.length - 1;
+
+    if (toPathname.startsWith("..")) {
+      let toSegments = toPathname.split("/"); // Each leading .. segment means "go up one route" instead of "go up one
+      // URL segment".  This is a key difference from how <a href> works and a
+      // major reason we call this a "to" value instead of a "href".
+
+      while (toSegments[0] === "..") {
+        toSegments.shift();
+        routePathnameIndex -= 1;
+      }
+
+      to.pathname = toSegments.join("/");
+    } // If there are more ".." segments than parent routes, resolve relative to
+    // the root / URL.
+
+
+    from = routePathnameIndex >= 0 ? routePathnames[routePathnameIndex] : "/";
+  }
+
+  let path = resolvePath(to, from); // Ensure the pathname has a trailing slash if the original "to" had one
+
+  let hasExplicitTrailingSlash = toPathname && toPathname !== "/" && toPathname.endsWith("/"); // Or if this was a link to the current path which has a trailing slash
+
+  let hasCurrentTrailingSlash = (isEmptyPath || toPathname === ".") && locationPathname.endsWith("/");
+
+  if (!path.pathname.endsWith("/") && (hasExplicitTrailingSlash || hasCurrentTrailingSlash)) {
+    path.pathname += "/";
+  }
+
+  return path;
+}
+/**
+ * @private
+ */
+
+function getToPathname(to) {
+  // Empty strings should be treated the same as / paths
+  return to === "" || to.pathname === "" ? "/" : typeof to === "string" ? parsePath(to).pathname : to.pathname;
+}
+/**
+ * @private
+ */
+
+const joinPaths = paths => paths.join("/").replace(/\/\/+/g, "/");
+/**
+ * @private
+ */
+
+const normalizePathname = pathname => pathname.replace(/\/+$/, "").replace(/^\/*/, "/");
+/**
+ * @private
+ */
+
+const normalizeSearch = search => !search || search === "?" ? "" : search.startsWith("?") ? search : "?" + search;
+/**
+ * @private
+ */
+
+const normalizeHash = hash => !hash || hash === "#" ? "" : hash.startsWith("#") ? hash : "#" + hash;
+/**
+ * This is a shortcut for creating `application/json` responses. Converts `data`
+ * to JSON and sets the `Content-Type` header.
+ */
+
+const json = function json(data, init) {
+  if (init === void 0) {
+    init = {};
+  }
+
+  let responseInit = typeof init === "number" ? {
+    status: init
+  } : init;
+  let headers = new Headers(responseInit.headers);
+
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json; charset=utf-8");
+  }
+
+  return new Response(JSON.stringify(data), _extends({}, responseInit, {
+    headers
+  }));
+};
+class AbortedDeferredError extends Error {}
+class DeferredData {
+  constructor(data) {
+    this.pendingKeys = new Set();
+    this.subscriber = undefined;
+    invariant(data && typeof data === "object" && !Array.isArray(data), "defer() only accepts plain objects"); // Set up an AbortController + Promise we can race against to exit early
+    // cancellation
+
+    let reject;
+    this.abortPromise = new Promise((_, r) => reject = r);
+    this.controller = new AbortController();
+
+    let onAbort = () => reject(new AbortedDeferredError("Deferred data aborted"));
+
+    this.unlistenAbortSignal = () => this.controller.signal.removeEventListener("abort", onAbort);
+
+    this.controller.signal.addEventListener("abort", onAbort);
+    this.data = Object.entries(data).reduce((acc, _ref) => {
+      let [key, value] = _ref;
+      return Object.assign(acc, {
+        [key]: this.trackPromise(key, value)
+      });
+    }, {});
+  }
+
+  trackPromise(key, value) {
+    if (!(value instanceof Promise)) {
+      return value;
+    }
+
+    this.pendingKeys.add(key); // We store a little wrapper promise that will be extended with
+    // _data/_error props upon resolve/reject
+
+    let promise = Promise.race([value, this.abortPromise]).then(data => this.onSettle(promise, key, null, data), error => this.onSettle(promise, key, error)); // Register rejection listeners to avoid uncaught promise rejections on
+    // errors or aborted deferred values
+
+    promise.catch(() => {});
+    Object.defineProperty(promise, "_tracked", {
+      get: () => true
+    });
+    return promise;
+  }
+
+  onSettle(promise, key, error, data) {
+    if (this.controller.signal.aborted && error instanceof AbortedDeferredError) {
+      this.unlistenAbortSignal();
+      Object.defineProperty(promise, "_error", {
+        get: () => error
+      });
+      return Promise.reject(error);
+    }
+
+    this.pendingKeys.delete(key);
+
+    if (this.done) {
+      // Nothing left to abort!
+      this.unlistenAbortSignal();
+    }
+
+    const subscriber = this.subscriber;
+
+    if (error) {
+      Object.defineProperty(promise, "_error", {
+        get: () => error
+      });
+      subscriber && subscriber(false);
+      return Promise.reject(error);
+    }
+
+    Object.defineProperty(promise, "_data", {
+      get: () => data
+    });
+    subscriber && subscriber(false);
+    return data;
+  }
+
+  subscribe(fn) {
+    this.subscriber = fn;
+  }
+
+  cancel() {
+    this.controller.abort();
+    this.pendingKeys.forEach((v, k) => this.pendingKeys.delete(k));
+    let subscriber = this.subscriber;
+    subscriber && subscriber(true);
+  }
+
+  async resolveData(signal) {
+    let aborted = false;
+
+    if (!this.done) {
+      let onAbort = () => this.cancel();
+
+      signal.addEventListener("abort", onAbort);
+      aborted = await new Promise(resolve => {
+        this.subscribe(aborted => {
+          signal.removeEventListener("abort", onAbort);
+
+          if (aborted || this.done) {
+            resolve(aborted);
+          }
+        });
+      });
+    }
+
+    return aborted;
+  }
+
+  get done() {
+    return this.pendingKeys.size === 0;
+  }
+
+  get unwrappedData() {
+    invariant(this.data !== null && this.done, "Can only unwrap data on initialized and settled deferreds");
+    return Object.entries(this.data).reduce((acc, _ref2) => {
+      let [key, value] = _ref2;
+      return Object.assign(acc, {
+        [key]: unwrapTrackedPromise(value)
+      });
+    }, {});
+  }
+
+}
+
+function isTrackedPromise(value) {
+  return value instanceof Promise && value._tracked === true;
+}
+
+function unwrapTrackedPromise(value) {
+  if (!isTrackedPromise(value)) {
+    return value;
+  }
+
+  if (value._error) {
+    throw value._error;
+  }
+
+  return value._data;
+}
+
+function defer(data) {
+  return new DeferredData(data);
+}
+/**
+ * A redirect response. Sets the status code and the `Location` header.
+ * Defaults to "302 Found".
+ */
+
+const redirect = function redirect(url, init) {
+  if (init === void 0) {
+    init = 302;
+  }
+
+  let responseInit = init;
+
+  if (typeof responseInit === "number") {
+    responseInit = {
+      status: responseInit
+    };
+  } else if (typeof responseInit.status === "undefined") {
+    responseInit.status = 302;
+  }
+
+  let headers = new Headers(responseInit.headers);
+  headers.set("Location", url);
+  return new Response(null, _extends({}, responseInit, {
+    headers
+  }));
+};
+/**
+ * @private
+ * Utility class we use to hold auto-unwrapped 4xx/5xx Response bodies
+ */
+
+class ErrorResponse {
+  constructor(status, statusText, data) {
+    this.status = status;
+    this.statusText = statusText || "";
+    this.data = data;
+  }
+
+}
+/**
+ * Check if the given error is an ErrorResponse generated from a 4xx/5xx
+ * Response throw from an action/loader
+ */
+
+function isRouteErrorResponse(e) {
+  return e instanceof ErrorResponse;
+}
+
+const IDLE_NAVIGATION = {
+  state: "idle",
+  location: undefined,
+  formMethod: undefined,
+  formAction: undefined,
+  formEncType: undefined,
+  formData: undefined
+};
+const IDLE_FETCHER = {
+  state: "idle",
+  data: undefined,
+  formMethod: undefined,
+  formAction: undefined,
+  formEncType: undefined,
+  formData: undefined
+};
+const isBrowser = typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined";
+const isServer = !isBrowser; //#endregion
+////////////////////////////////////////////////////////////////////////////////
+//#region createRouter
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Create a router and listen to history POP navigations
+ */
+
+function createRouter(init) {
+  invariant(init.routes.length > 0, "You must provide a non-empty routes array to createRouter");
+  let dataRoutes = convertRoutesToDataRoutes(init.routes); // Cleanup function for history
+
+  let unlistenHistory = null; // Externally-provided functions to call on all state changes
+
+  let subscribers = new Set(); // Externally-provided object to hold scroll restoration locations during routing
+
+  let savedScrollPositions = null; // Externally-provided function to get scroll restoration keys
+
+  let getScrollRestorationKey = null; // Externally-provided function to get current scroll position
+
+  let getScrollPosition = null; // One-time flag to control the initial hydration scroll restoration.  Because
+  // we don't get the saved positions from <ScrollRestoration /> until _after_
+  // the initial render, we need to manually trigger a separate updateState to
+  // send along the restoreScrollPosition
+
+  let initialScrollRestored = false;
+  let initialMatches = matchRoutes(dataRoutes, init.history.location, init.basename);
+  let initialErrors = null;
+
+  if (initialMatches == null) {
+    // If we do not match a user-provided-route, fall back to the root
+    // to allow the error boundary to take over
+    let {
+      matches,
+      route,
+      error
+    } = getNotFoundMatches(dataRoutes);
+    initialMatches = matches;
+    initialErrors = {
+      [route.id]: error
+    };
+  }
+
+  let initialized = !initialMatches.some(m => m.route.loader) || init.hydrationData != null;
+  let router;
+  let state = {
+    historyAction: init.history.action,
+    location: init.history.location,
+    matches: initialMatches,
+    initialized,
+    navigation: IDLE_NAVIGATION,
+    restoreScrollPosition: null,
+    preventScrollReset: false,
+    revalidation: "idle",
+    loaderData: init.hydrationData && init.hydrationData.loaderData || {},
+    actionData: init.hydrationData && init.hydrationData.actionData || null,
+    errors: init.hydrationData && init.hydrationData.errors || initialErrors,
+    fetchers: new Map()
+  }; // -- Stateful internal variables to manage navigations --
+  // Current navigation in progress (to be committed in completeNavigation)
+
+  let pendingAction = Action.Pop; // Should the current navigation prevent the scroll reset if scroll cannot
+  // be restored?
+
+  let pendingPreventScrollReset = false; // AbortController for the active navigation
+
+  let pendingNavigationController; // We use this to avoid touching history in completeNavigation if a
+  // revalidation is entirely uninterrupted
+
+  let isUninterruptedRevalidation = false; // Use this internal flag to force revalidation of all loaders:
+  //  - submissions (completed or interrupted)
+  //  - useRevalidate()
+  //  - X-Remix-Revalidate (from redirect)
+
+  let isRevalidationRequired = false; // Use this internal array to capture routes that require revalidation due
+  // to a cancelled deferred on action submission
+
+  let cancelledDeferredRoutes = []; // Use this internal array to capture fetcher loads that were cancelled by an
+  // action navigation and require revalidation
+
+  let cancelledFetcherLoads = []; // AbortControllers for any in-flight fetchers
+
+  let fetchControllers = new Map(); // Track loads based on the order in which they started
+
+  let incrementingLoadId = 0; // Track the outstanding pending navigation data load to be compared against
+  // the globally incrementing load when a fetcher load lands after a completed
+  // navigation
+
+  let pendingNavigationLoadId = -1; // Fetchers that triggered data reloads as a result of their actions
+
+  let fetchReloadIds = new Map(); // Fetchers that triggered redirect navigations from their actions
+
+  let fetchRedirectIds = new Set(); // Most recent href/match for fetcher.load calls for fetchers
+
+  let fetchLoadMatches = new Map(); // Store DeferredData instances for active route matches.  When a
+  // route loader returns defer() we stick one in here.  Then, when a nested
+  // promise resolves we update loaderData.  If a new navigation starts we
+  // cancel active deferreds for eliminated routes.
+
+  let activeDeferreds = new Map(); // Initialize the router, all side effects should be kicked off from here.
+  // Implemented as a Fluent API for ease of:
+  //   let router = createRouter(init).initialize();
+
+  function initialize() {
+    // If history informs us of a POP navigation, start the navigation but do not update
+    // state.  We'll update our own state once the navigation completes
+    unlistenHistory = init.history.listen(_ref => {
+      let {
+        action: historyAction,
+        location
+      } = _ref;
+      return startNavigation(historyAction, location);
+    }); // Kick off initial data load if needed.  Use Pop to avoid modifying history
+
+    if (!state.initialized) {
+      startNavigation(Action.Pop, state.location);
+    }
+
+    return router;
+  } // Clean up a router and it's side effects
+
+
+  function dispose() {
+    if (unlistenHistory) {
+      unlistenHistory();
+    }
+
+    subscribers.clear();
+    pendingNavigationController && pendingNavigationController.abort();
+    state.fetchers.forEach((_, key) => deleteFetcher(key));
+  } // Subscribe to state updates for the router
+
+
+  function subscribe(fn) {
+    subscribers.add(fn);
+    return () => subscribers.delete(fn);
+  } // Update our state and notify the calling context of the change
+
+
+  function updateState(newState) {
+    state = _extends({}, state, newState);
+    subscribers.forEach(subscriber => subscriber(state));
+  } // Complete a navigation returning the state.navigation back to the IDLE_NAVIGATION
+  // and setting state.[historyAction/location/matches] to the new route.
+  // - Location is a required param
+  // - Navigation will always be set to IDLE_NAVIGATION
+  // - Can pass any other state in newState
+
+
+  function completeNavigation(location, newState) {
+    var _state$navigation$for;
+
+    // Deduce if we're in a loading/actionReload state:
+    // - We have committed actionData in the store
+    // - The current navigation was a submission
+    // - We're past the submitting state and into the loading state
+    // - The location we've finished loading is different from the submission
+    //   location, indicating we redirected from the action (avoids false
+    //   positives for loading/submissionRedirect when actionData returned
+    //   on a prior submission)
+    let isActionReload = state.actionData != null && state.navigation.formMethod != null && state.navigation.state === "loading" && ((_state$navigation$for = state.navigation.formAction) == null ? void 0 : _state$navigation$for.split("?")[0]) === location.pathname; // Always preserve any existing loaderData from re-used routes
+
+    let newLoaderData = newState.loaderData ? {
+      loaderData: mergeLoaderData(state.loaderData, newState.loaderData, newState.matches || [])
+    } : {};
+    updateState(_extends({}, isActionReload ? {} : {
+      actionData: null
+    }, newState, newLoaderData, {
+      historyAction: pendingAction,
+      location,
+      initialized: true,
+      navigation: IDLE_NAVIGATION,
+      revalidation: "idle",
+      // Don't restore on submission navigations
+      restoreScrollPosition: state.navigation.formData ? false : getSavedScrollPosition(location, newState.matches || state.matches),
+      preventScrollReset: pendingPreventScrollReset
+    }));
+
+    if (isUninterruptedRevalidation) ; else if (pendingAction === Action.Pop) ; else if (pendingAction === Action.Push) {
+      init.history.push(location, location.state);
+    } else if (pendingAction === Action.Replace) {
+      init.history.replace(location, location.state);
+    } // Reset stateful navigation vars
+
+
+    pendingAction = Action.Pop;
+    pendingPreventScrollReset = false;
+    isUninterruptedRevalidation = false;
+    isRevalidationRequired = false;
+    cancelledDeferredRoutes = [];
+    cancelledFetcherLoads = [];
+  } // Trigger a navigation event, which can either be a numerical POP or a PUSH
+  // replace with an optional submission
+
+
+  async function navigate(to, opts) {
+    if (typeof to === "number") {
+      init.history.go(to);
+      return;
+    }
+
+    let {
+      path,
+      submission,
+      error
+    } = normalizeNavigateOptions(to, opts);
+    let location = createLocation(state.location, path, opts && opts.state); // When using navigate as a PUSH/REPLACE we aren't reading an already-encoded
+    // URL from window.location, so we need to encode it here so the behavior
+    // remains the same as POP and non-data-router usages.  new URL() does all
+    // the same encoding we'd get from a history.pushState/window.location read
+    // without having to touch history
+
+    location = init.history.encodeLocation(location);
+    let historyAction = (opts && opts.replace) === true || submission != null ? Action.Replace : Action.Push;
+    let preventScrollReset = opts && "preventScrollReset" in opts ? opts.preventScrollReset === true : undefined;
+    return await startNavigation(historyAction, location, {
+      submission,
+      // Send through the formData serialization error if we have one so we can
+      // render at the right error boundary after we match routes
+      pendingError: error,
+      preventScrollReset,
+      replace: opts && opts.replace
+    });
+  } // Revalidate all current loaders.  If a navigation is in progress or if this
+  // is interrupted by a navigation, allow this to "succeed" by calling all
+  // loaders during the next loader round
+
+
+  function revalidate() {
+    interruptActiveLoads();
+    updateState({
+      revalidation: "loading"
+    }); // If we're currently submitting an action, we don't need to start a new
+    // navigation, we'll just let the follow up loader execution call all loaders
+
+    if (state.navigation.state === "submitting") {
+      return;
+    } // If we're currently in an idle state, start a new navigation for the current
+    // action/location and mark it as uninterrupted, which will skip the history
+    // update in completeNavigation
+
+
+    if (state.navigation.state === "idle") {
+      startNavigation(state.historyAction, state.location, {
+        startUninterruptedRevalidation: true
+      });
+      return;
+    } // Otherwise, if we're currently in a loading state, just start a new
+    // navigation to the navigation.location but do not trigger an uninterrupted
+    // revalidation so that history correctly updates once the navigation completes
+
+
+    startNavigation(pendingAction || state.historyAction, state.navigation.location, {
+      overrideNavigation: state.navigation
+    });
+  } // Start a navigation to the given action/location.  Can optionally provide a
+  // overrideNavigation which will override the normalLoad in the case of a redirect
+  // navigation
+
+
+  async function startNavigation(historyAction, location, opts) {
+    // Abort any in-progress navigations and start a new one. Unset any ongoing
+    // uninterrupted revalidations unless told otherwise, since we want this
+    // new navigation to update history normally
+    pendingNavigationController && pendingNavigationController.abort();
+    pendingNavigationController = null;
+    pendingAction = historyAction;
+    isUninterruptedRevalidation = (opts && opts.startUninterruptedRevalidation) === true; // Save the current scroll position every time we start a new navigation,
+    // and track whether we should reset scroll on completion
+
+    saveScrollPosition(state.location, state.matches);
+    pendingPreventScrollReset = (opts && opts.preventScrollReset) === true;
+    let loadingNavigation = opts && opts.overrideNavigation;
+    let matches = matchRoutes(dataRoutes, location, init.basename); // Short circuit with a 404 on the root error boundary if we match nothing
+
+    if (!matches) {
+      let {
+        matches: notFoundMatches,
+        route,
+        error
+      } = getNotFoundMatches(dataRoutes); // Cancel all pending deferred on 404s since we don't keep any routes
+
+      cancelActiveDeferreds();
+      completeNavigation(location, {
+        matches: notFoundMatches,
+        loaderData: {},
+        errors: {
+          [route.id]: error
+        }
+      });
+      return;
+    } // Short circuit if it's only a hash change
+
+
+    if (isHashChangeOnly(state.location, location)) {
+      completeNavigation(location, {
+        matches
+      });
+      return;
+    } // Create a controller/Request for this navigation
+
+
+    pendingNavigationController = new AbortController();
+    let request = createRequest(location, pendingNavigationController.signal, opts && opts.submission);
+    let pendingActionData;
+    let pendingError;
+
+    if (opts && opts.pendingError) {
+      // If we have a pendingError, it means the user attempted a GET submission
+      // with binary FormData so assign here and skip to handleLoaders.  That
+      // way we handle calling loaders above the boundary etc.  It's not really
+      // different from an actionError in that sense.
+      pendingError = {
+        [findNearestBoundary(matches).route.id]: opts.pendingError
+      };
+    } else if (opts && opts.submission) {
+      // Call action if we received an action submission
+      let actionOutput = await handleAction(request, location, opts.submission, matches, {
+        replace: opts.replace
+      });
+
+      if (actionOutput.shortCircuited) {
+        return;
+      }
+
+      pendingActionData = actionOutput.pendingActionData;
+      pendingError = actionOutput.pendingActionError;
+
+      let navigation = _extends({
+        state: "loading",
+        location
+      }, opts.submission);
+
+      loadingNavigation = navigation;
+    } // Call loaders
+
+
+    let {
+      shortCircuited,
+      loaderData,
+      errors
+    } = await handleLoaders(request, location, matches, loadingNavigation, opts && opts.submission, opts && opts.replace, pendingActionData, pendingError);
+
+    if (shortCircuited) {
+      return;
+    } // Clean up now that the action/loaders have completed.  Don't clean up if
+    // we short circuited because pendingNavigationController will have already
+    // been assigned to a new controller for the next navigation
+
+
+    pendingNavigationController = null;
+    completeNavigation(location, {
+      matches,
+      loaderData,
+      errors
+    });
+  } // Call the action matched by the leaf route for this navigation and handle
+  // redirects/errors
+
+
+  async function handleAction(request, location, submission, matches, opts) {
+    interruptActiveLoads(); // Put us in a submitting state
+
+    let navigation = _extends({
+      state: "submitting",
+      location
+    }, submission);
+
+    updateState({
+      navigation
+    }); // Call our action and get the result
+
+    let result;
+    let actionMatch = getTargetMatch(matches, location);
+
+    if (!actionMatch.route.action) {
+      result = getMethodNotAllowedResult(location);
+    } else {
+      result = await callLoaderOrAction("action", request, actionMatch, matches, router.basename);
+
+      if (request.signal.aborted) {
+        return {
+          shortCircuited: true
+        };
+      }
+    }
+
+    if (isRedirectResult(result)) {
+      let redirectNavigation = _extends({
+        state: "loading",
+        location: createLocation(state.location, result.location)
+      }, submission);
+
+      await startRedirectNavigation(result, redirectNavigation, opts && opts.replace);
+      return {
+        shortCircuited: true
+      };
+    }
+
+    if (isErrorResult(result)) {
+      // Store off the pending error - we use it to determine which loaders
+      // to call and will commit it when we complete the navigation
+      let boundaryMatch = findNearestBoundary(matches, actionMatch.route.id); // By default, all submissions are REPLACE navigations, but if the
+      // action threw an error that'll be rendered in an errorElement, we fall
+      // back to PUSH so that the user can use the back button to get back to
+      // the pre-submission form location to try again
+
+      if ((opts && opts.replace) !== true) {
+        pendingAction = Action.Push;
+      }
+
+      return {
+        pendingActionError: {
+          [boundaryMatch.route.id]: result.error
+        }
+      };
+    }
+
+    if (isDeferredResult(result)) {
+      throw new Error("defer() is not supported in actions");
+    }
+
+    return {
+      pendingActionData: {
+        [actionMatch.route.id]: result.data
+      }
+    };
+  } // Call all applicable loaders for the given matches, handling redirects,
+  // errors, etc.
+
+
+  async function handleLoaders(request, location, matches, overrideNavigation, submission, replace, pendingActionData, pendingError) {
+    // Figure out the right navigation we want to use for data loading
+    let loadingNavigation = overrideNavigation;
+
+    if (!loadingNavigation) {
+      let navigation = {
+        state: "loading",
+        location,
+        formMethod: undefined,
+        formAction: undefined,
+        formEncType: undefined,
+        formData: undefined
+      };
+      loadingNavigation = navigation;
+    }
+
+    let [matchesToLoad, revalidatingFetchers] = getMatchesToLoad(state, matches, submission, location, isRevalidationRequired, cancelledDeferredRoutes, cancelledFetcherLoads, pendingActionData, pendingError, fetchLoadMatches); // Cancel pending deferreds for no-longer-matched routes or routes we're
+    // about to reload.  Note that if this is an action reload we would have
+    // already cancelled all pending deferreds so this would be a no-op
+
+    cancelActiveDeferreds(routeId => !(matches && matches.some(m => m.route.id === routeId)) || matchesToLoad && matchesToLoad.some(m => m.route.id === routeId)); // Short circuit if we have no loaders to run
+
+    if (matchesToLoad.length === 0 && revalidatingFetchers.length === 0) {
+      completeNavigation(location, {
+        matches,
+        loaderData: mergeLoaderData(state.loaderData, {}, matches),
+        // Commit pending error if we're short circuiting
+        errors: pendingError || null,
+        actionData: pendingActionData || null
+      });
+      return {
+        shortCircuited: true
+      };
+    } // If this is an uninterrupted revalidation, we remain in our current idle
+    // state.  If not, we need to switch to our loading state and load data,
+    // preserving any new action data or existing action data (in the case of
+    // a revalidation interrupting an actionReload)
+
+
+    if (!isUninterruptedRevalidation) {
+      revalidatingFetchers.forEach(_ref2 => {
+        let [key] = _ref2;
+        let fetcher = state.fetchers.get(key);
+        let revalidatingFetcher = {
+          state: "loading",
+          data: fetcher && fetcher.data,
+          formMethod: undefined,
+          formAction: undefined,
+          formEncType: undefined,
+          formData: undefined
+        };
+        state.fetchers.set(key, revalidatingFetcher);
+      });
+      updateState(_extends({
+        navigation: loadingNavigation,
+        actionData: pendingActionData || state.actionData || null
+      }, revalidatingFetchers.length > 0 ? {
+        fetchers: new Map(state.fetchers)
+      } : {}));
+    }
+
+    pendingNavigationLoadId = ++incrementingLoadId;
+    revalidatingFetchers.forEach(_ref3 => {
+      let [key] = _ref3;
+      return fetchControllers.set(key, pendingNavigationController);
+    });
+    let {
+      results,
+      loaderResults,
+      fetcherResults
+    } = await callLoadersAndMaybeResolveData(state.matches, matches, matchesToLoad, revalidatingFetchers, request);
+
+    if (request.signal.aborted) {
+      return {
+        shortCircuited: true
+      };
+    } // Clean up _after_ loaders have completed.  Don't clean up if we short
+    // circuited because fetchControllers would have been aborted and
+    // reassigned to new controllers for the next navigation
+
+
+    revalidatingFetchers.forEach(_ref4 => {
+      let [key] = _ref4;
+      return fetchControllers.delete(key);
+    }); // If any loaders returned a redirect Response, start a new REPLACE navigation
+
+    let redirect = findRedirect(results);
+
+    if (redirect) {
+      let redirectNavigation = getLoaderRedirect(state, redirect);
+      await startRedirectNavigation(redirect, redirectNavigation, replace);
+      return {
+        shortCircuited: true
+      };
+    } // Process and commit output from loaders
+
+
+    let {
+      loaderData,
+      errors
+    } = processLoaderData(state, matches, matchesToLoad, loaderResults, pendingError, revalidatingFetchers, fetcherResults, activeDeferreds); // Wire up subscribers to update loaderData as promises settle
+
+    activeDeferreds.forEach((deferredData, routeId) => {
+      deferredData.subscribe(aborted => {
+        // Note: No need to updateState here since the TrackedPromise on
+        // loaderData is stable across resolve/reject
+        // Remove this instance if we were aborted or if promises have settled
+        if (aborted || deferredData.done) {
+          activeDeferreds.delete(routeId);
+        }
+      });
+    });
+    markFetchRedirectsDone();
+    let didAbortFetchLoads = abortStaleFetchLoads(pendingNavigationLoadId);
+    return _extends({
+      loaderData,
+      errors
+    }, didAbortFetchLoads || revalidatingFetchers.length > 0 ? {
+      fetchers: new Map(state.fetchers)
+    } : {});
+  }
+
+  function getFetcher(key) {
+    return state.fetchers.get(key) || IDLE_FETCHER;
+  } // Trigger a fetcher load/submit for the given fetcher key
+
+
+  function fetch(key, routeId, href, opts) {
+    if (isServer) {
+      throw new Error("router.fetch() was called during the server render, but it shouldn't be. " + "You are likely calling a useFetcher() method in the body of your component. " + "Try moving it to a useEffect or a callback.");
+    }
+
+    if (fetchControllers.has(key)) abortFetcher(key);
+    let matches = matchRoutes(dataRoutes, href, init.basename);
+
+    if (!matches) {
+      setFetcherError(key, routeId, new ErrorResponse(404, "Not Found", null));
+      return;
+    }
+
+    let {
+      path,
+      submission
+    } = normalizeNavigateOptions(href, opts, true);
+    let match = getTargetMatch(matches, path);
+
+    if (submission) {
+      handleFetcherAction(key, routeId, path, match, matches, submission);
+      return;
+    } // Store off the match so we can call it's shouldRevalidate on subsequent
+    // revalidations
+
+
+    fetchLoadMatches.set(key, [path, match, matches]);
+    handleFetcherLoader(key, routeId, path, match, matches);
+  } // Call the action for the matched fetcher.submit(), and then handle redirects,
+  // errors, and revalidation
+
+
+  async function handleFetcherAction(key, routeId, path, match, requestMatches, submission) {
+    interruptActiveLoads();
+    fetchLoadMatches.delete(key);
+
+    if (!match.route.action) {
+      let {
+        error
+      } = getMethodNotAllowedResult(path);
+      setFetcherError(key, routeId, error);
+      return;
+    } // Put this fetcher into it's submitting state
+
+
+    let existingFetcher = state.fetchers.get(key);
+
+    let fetcher = _extends({
+      state: "submitting"
+    }, submission, {
+      data: existingFetcher && existingFetcher.data
+    });
+
+    state.fetchers.set(key, fetcher);
+    updateState({
+      fetchers: new Map(state.fetchers)
+    }); // Call the action for the fetcher
+
+    let abortController = new AbortController();
+    let fetchRequest = createRequest(path, abortController.signal, submission);
+    fetchControllers.set(key, abortController);
+    let actionResult = await callLoaderOrAction("action", fetchRequest, match, requestMatches, router.basename);
+
+    if (fetchRequest.signal.aborted) {
+      // We can delete this so long as we weren't aborted by ou our own fetcher
+      // re-submit which would have put _new_ controller is in fetchControllers
+      if (fetchControllers.get(key) === abortController) {
+        fetchControllers.delete(key);
+      }
+
+      return;
+    }
+
+    if (isRedirectResult(actionResult)) {
+      fetchControllers.delete(key);
+      fetchRedirectIds.add(key);
+
+      let loadingFetcher = _extends({
+        state: "loading"
+      }, submission, {
+        data: undefined
+      });
+
+      state.fetchers.set(key, loadingFetcher);
+      updateState({
+        fetchers: new Map(state.fetchers)
+      });
+
+      let redirectNavigation = _extends({
+        state: "loading",
+        location: createLocation(state.location, actionResult.location)
+      }, submission);
+
+      await startRedirectNavigation(actionResult, redirectNavigation);
+      return;
+    } // Process any non-redirect errors thrown
+
+
+    if (isErrorResult(actionResult)) {
+      setFetcherError(key, routeId, actionResult.error);
+      return;
+    }
+
+    if (isDeferredResult(actionResult)) {
+      invariant(false, "defer() is not supported in actions");
+    } // Start the data load for current matches, or the next location if we're
+    // in the middle of a navigation
+
+
+    let nextLocation = state.navigation.location || state.location;
+    let revalidationRequest = createRequest(nextLocation, abortController.signal);
+    let matches = state.navigation.state !== "idle" ? matchRoutes(dataRoutes, state.navigation.location, init.basename) : state.matches;
+    invariant(matches, "Didn't find any matches after fetcher action");
+    let loadId = ++incrementingLoadId;
+    fetchReloadIds.set(key, loadId);
+
+    let loadFetcher = _extends({
+      state: "loading",
+      data: actionResult.data
+    }, submission);
+
+    state.fetchers.set(key, loadFetcher);
+    let [matchesToLoad, revalidatingFetchers] = getMatchesToLoad(state, matches, submission, nextLocation, isRevalidationRequired, cancelledDeferredRoutes, cancelledFetcherLoads, {
+      [match.route.id]: actionResult.data
+    }, undefined, // No need to send through errors since we short circuit above
+    fetchLoadMatches); // Put all revalidating fetchers into the loading state, except for the
+    // current fetcher which we want to keep in it's current loading state which
+    // contains it's action submission info + action data
+
+    revalidatingFetchers.filter(_ref5 => {
+      let [staleKey] = _ref5;
+      return staleKey !== key;
+    }).forEach(_ref6 => {
+      let [staleKey] = _ref6;
+      let existingFetcher = state.fetchers.get(staleKey);
+      let revalidatingFetcher = {
+        state: "loading",
+        data: existingFetcher && existingFetcher.data,
+        formMethod: undefined,
+        formAction: undefined,
+        formEncType: undefined,
+        formData: undefined
+      };
+      state.fetchers.set(staleKey, revalidatingFetcher);
+      fetchControllers.set(staleKey, abortController);
+    });
+    updateState({
+      fetchers: new Map(state.fetchers)
+    });
+    let {
+      results,
+      loaderResults,
+      fetcherResults
+    } = await callLoadersAndMaybeResolveData(state.matches, matches, matchesToLoad, revalidatingFetchers, revalidationRequest);
+
+    if (abortController.signal.aborted) {
+      return;
+    }
+
+    fetchReloadIds.delete(key);
+    fetchControllers.delete(key);
+    revalidatingFetchers.forEach(_ref7 => {
+      let [staleKey] = _ref7;
+      return fetchControllers.delete(staleKey);
+    });
+    let redirect = findRedirect(results);
+
+    if (redirect) {
+      let redirectNavigation = getLoaderRedirect(state, redirect);
+      await startRedirectNavigation(redirect, redirectNavigation);
+      return;
+    } // Process and commit output from loaders
+
+
+    let {
+      loaderData,
+      errors
+    } = processLoaderData(state, state.matches, matchesToLoad, loaderResults, undefined, revalidatingFetchers, fetcherResults, activeDeferreds);
+    let doneFetcher = {
+      state: "idle",
+      data: actionResult.data,
+      formMethod: undefined,
+      formAction: undefined,
+      formEncType: undefined,
+      formData: undefined
+    };
+    state.fetchers.set(key, doneFetcher);
+    let didAbortFetchLoads = abortStaleFetchLoads(loadId); // If we are currently in a navigation loading state and this fetcher is
+    // more recent than the navigation, we want the newer data so abort the
+    // navigation and complete it with the fetcher data
+
+    if (state.navigation.state === "loading" && loadId > pendingNavigationLoadId) {
+      invariant(pendingAction, "Expected pending action");
+      pendingNavigationController && pendingNavigationController.abort();
+      completeNavigation(state.navigation.location, {
+        matches,
+        loaderData,
+        errors,
+        fetchers: new Map(state.fetchers)
+      });
+    } else {
+      // otherwise just update with the fetcher data, preserving any existing
+      // loaderData for loaders that did not need to reload.  We have to
+      // manually merge here since we aren't going through completeNavigation
+      updateState(_extends({
+        errors,
+        loaderData: mergeLoaderData(state.loaderData, loaderData, matches)
+      }, didAbortFetchLoads ? {
+        fetchers: new Map(state.fetchers)
+      } : {}));
+      isRevalidationRequired = false;
+    }
+  } // Call the matched loader for fetcher.load(), handling redirects, errors, etc.
+
+
+  async function handleFetcherLoader(key, routeId, path, match, matches) {
+    let existingFetcher = state.fetchers.get(key); // Put this fetcher into it's loading state
+
+    let loadingFetcher = {
+      state: "loading",
+      formMethod: undefined,
+      formAction: undefined,
+      formEncType: undefined,
+      formData: undefined,
+      data: existingFetcher && existingFetcher.data
+    };
+    state.fetchers.set(key, loadingFetcher);
+    updateState({
+      fetchers: new Map(state.fetchers)
+    }); // Call the loader for this fetcher route match
+
+    let abortController = new AbortController();
+    let fetchRequest = createRequest(path, abortController.signal);
+    fetchControllers.set(key, abortController);
+    let result = await callLoaderOrAction("loader", fetchRequest, match, matches, router.basename); // Deferred isn't supported or fetcher loads, await everything and treat it
+    // as a normal load.  resolveDeferredData will return undefined if this
+    // fetcher gets aborted, so we just leave result untouched and short circuit
+    // below if that happens
+
+    if (isDeferredResult(result)) {
+      result = (await resolveDeferredData(result, fetchRequest.signal, true)) || result;
+    } // We can delete this so long as we weren't aborted by ou our own fetcher
+    // re-load which would have put _new_ controller is in fetchControllers
+
+
+    if (fetchControllers.get(key) === abortController) {
+      fetchControllers.delete(key);
+    }
+
+    if (fetchRequest.signal.aborted) {
+      return;
+    } // If the loader threw a redirect Response, start a new REPLACE navigation
+
+
+    if (isRedirectResult(result)) {
+      let redirectNavigation = getLoaderRedirect(state, result);
+      await startRedirectNavigation(result, redirectNavigation);
+      return;
+    } // Process any non-redirect errors thrown
+
+
+    if (isErrorResult(result)) {
+      let boundaryMatch = findNearestBoundary(state.matches, routeId);
+      state.fetchers.delete(key); // TODO: In remix, this would reset to IDLE_NAVIGATION if it was a catch -
+      // do we need to behave any differently with our non-redirect errors?
+      // What if it was a non-redirect Response?
+
+      updateState({
+        fetchers: new Map(state.fetchers),
+        errors: {
+          [boundaryMatch.route.id]: result.error
+        }
+      });
+      return;
+    }
+
+    invariant(!isDeferredResult(result), "Unhandled fetcher deferred data"); // Put the fetcher back into an idle state
+
+    let doneFetcher = {
+      state: "idle",
+      data: result.data,
+      formMethod: undefined,
+      formAction: undefined,
+      formEncType: undefined,
+      formData: undefined
+    };
+    state.fetchers.set(key, doneFetcher);
+    updateState({
+      fetchers: new Map(state.fetchers)
+    });
+  }
+  /**
+   * Utility function to handle redirects returned from an action or loader.
+   * Normally, a redirect "replaces" the navigation that triggered it.  So, for
+   * example:
+   *
+   *  - user is on /a
+   *  - user clicks a link to /b
+   *  - loader for /b redirects to /c
+   *
+   * In a non-JS app the browser would track the in-flight navigation to /b and
+   * then replace it with /c when it encountered the redirect response.  In
+   * the end it would only ever update the URL bar with /c.
+   *
+   * In client-side routing using pushState/replaceState, we aim to emulate
+   * this behavior and we also do not update history until the end of the
+   * navigation (including processed redirects).  This means that we never
+   * actually touch history until we've processed redirects, so we just use
+   * the history action from the original navigation (PUSH or REPLACE).
+   */
+
+
+  async function startRedirectNavigation(redirect, navigation, replace) {
+    if (redirect.revalidate) {
+      isRevalidationRequired = true;
+    }
+
+    invariant(navigation.location, "Expected a location on the redirect navigation"); // There's no need to abort on redirects, since we don't detect the
+    // redirect until the action/loaders have settled
+
+    pendingNavigationController = null;
+    let redirectHistoryAction = replace === true ? Action.Replace : Action.Push;
+    await startNavigation(redirectHistoryAction, navigation.location, {
+      overrideNavigation: navigation
+    });
+  }
+
+  async function callLoadersAndMaybeResolveData(currentMatches, matches, matchesToLoad, fetchersToLoad, request) {
+    // Call all navigation loaders and revalidating fetcher loaders in parallel,
+    // then slice off the results into separate arrays so we can handle them
+    // accordingly
+    let results = await Promise.all([...matchesToLoad.map(match => callLoaderOrAction("loader", request, match, matches, router.basename)), ...fetchersToLoad.map(_ref8 => {
+      let [, href, match, fetchMatches] = _ref8;
+      return callLoaderOrAction("loader", createRequest(href, request.signal), match, fetchMatches, router.basename);
+    })]);
+    let loaderResults = results.slice(0, matchesToLoad.length);
+    let fetcherResults = results.slice(matchesToLoad.length);
+    await Promise.all([resolveDeferredResults(currentMatches, matchesToLoad, loaderResults, request.signal, false, state.loaderData), resolveDeferredResults(currentMatches, fetchersToLoad.map(_ref9 => {
+      let [,, match] = _ref9;
+      return match;
+    }), fetcherResults, request.signal, true)]);
+    return {
+      results,
+      loaderResults,
+      fetcherResults
+    };
+  }
+
+  function interruptActiveLoads() {
+    // Every interruption triggers a revalidation
+    isRevalidationRequired = true; // Cancel pending route-level deferreds and mark cancelled routes for
+    // revalidation
+
+    cancelledDeferredRoutes.push(...cancelActiveDeferreds()); // Abort in-flight fetcher loads
+
+    fetchLoadMatches.forEach((_, key) => {
+      if (fetchControllers.has(key)) {
+        cancelledFetcherLoads.push(key);
+        abortFetcher(key);
+      }
+    });
+  }
+
+  function setFetcherError(key, routeId, error) {
+    let boundaryMatch = findNearestBoundary(state.matches, routeId);
+    deleteFetcher(key);
+    updateState({
+      errors: {
+        [boundaryMatch.route.id]: error
+      },
+      fetchers: new Map(state.fetchers)
+    });
+  }
+
+  function deleteFetcher(key) {
+    if (fetchControllers.has(key)) abortFetcher(key);
+    fetchLoadMatches.delete(key);
+    fetchReloadIds.delete(key);
+    fetchRedirectIds.delete(key);
+    state.fetchers.delete(key);
+  }
+
+  function abortFetcher(key) {
+    let controller = fetchControllers.get(key);
+    invariant(controller, "Expected fetch controller: " + key);
+    controller.abort();
+    fetchControllers.delete(key);
+  }
+
+  function markFetchersDone(keys) {
+    for (let key of keys) {
+      let fetcher = getFetcher(key);
+      let doneFetcher = {
+        state: "idle",
+        data: fetcher.data,
+        formMethod: undefined,
+        formAction: undefined,
+        formEncType: undefined,
+        formData: undefined
+      };
+      state.fetchers.set(key, doneFetcher);
+    }
+  }
+
+  function markFetchRedirectsDone() {
+    let doneKeys = [];
+
+    for (let key of fetchRedirectIds) {
+      let fetcher = state.fetchers.get(key);
+      invariant(fetcher, "Expected fetcher: " + key);
+
+      if (fetcher.state === "loading") {
+        fetchRedirectIds.delete(key);
+        doneKeys.push(key);
+      }
+    }
+
+    markFetchersDone(doneKeys);
+  }
+
+  function abortStaleFetchLoads(landedId) {
+    let yeetedKeys = [];
+
+    for (let [key, id] of fetchReloadIds) {
+      if (id < landedId) {
+        let fetcher = state.fetchers.get(key);
+        invariant(fetcher, "Expected fetcher: " + key);
+
+        if (fetcher.state === "loading") {
+          abortFetcher(key);
+          fetchReloadIds.delete(key);
+          yeetedKeys.push(key);
+        }
+      }
+    }
+
+    markFetchersDone(yeetedKeys);
+    return yeetedKeys.length > 0;
+  }
+
+  function cancelActiveDeferreds(predicate) {
+    let cancelledRouteIds = [];
+    activeDeferreds.forEach((dfd, routeId) => {
+      if (!predicate || predicate(routeId)) {
+        // Cancel the deferred - but do not remove from activeDeferreds here -
+        // we rely on the subscribers to do that so our tests can assert proper
+        // cleanup via _internalActiveDeferreds
+        dfd.cancel();
+        cancelledRouteIds.push(routeId);
+        activeDeferreds.delete(routeId);
+      }
+    });
+    return cancelledRouteIds;
+  } // Opt in to capturing and reporting scroll positions during navigations,
+  // used by the <ScrollRestoration> component
+
+
+  function enableScrollRestoration(positions, getPosition, getKey) {
+    savedScrollPositions = positions;
+    getScrollPosition = getPosition;
+
+    getScrollRestorationKey = getKey || (location => location.key); // Perform initial hydration scroll restoration, since we miss the boat on
+    // the initial updateState() because we've not yet rendered <ScrollRestoration/>
+    // and therefore have no savedScrollPositions available
+
+
+    if (!initialScrollRestored && state.navigation === IDLE_NAVIGATION) {
+      initialScrollRestored = true;
+      let y = getSavedScrollPosition(state.location, state.matches);
+
+      if (y != null) {
+        updateState({
+          restoreScrollPosition: y
+        });
+      }
+    }
+
+    return () => {
+      savedScrollPositions = null;
+      getScrollPosition = null;
+      getScrollRestorationKey = null;
+    };
+  }
+
+  function saveScrollPosition(location, matches) {
+    if (savedScrollPositions && getScrollRestorationKey && getScrollPosition) {
+      let userMatches = matches.map(m => createUseMatchesMatch(m, state.loaderData));
+      let key = getScrollRestorationKey(location, userMatches) || location.key;
+      savedScrollPositions[key] = getScrollPosition();
+    }
+  }
+
+  function getSavedScrollPosition(location, matches) {
+    if (savedScrollPositions && getScrollRestorationKey && getScrollPosition) {
+      let userMatches = matches.map(m => createUseMatchesMatch(m, state.loaderData));
+      let key = getScrollRestorationKey(location, userMatches) || location.key;
+      let y = savedScrollPositions[key];
+
+      if (typeof y === "number") {
+        return y;
+      }
+    }
+
+    return null;
+  }
+
+  router = {
+    get basename() {
+      return init.basename;
+    },
+
+    get state() {
+      return state;
+    },
+
+    get routes() {
+      return dataRoutes;
+    },
+
+    initialize,
+    subscribe,
+    enableScrollRestoration,
+    navigate,
+    fetch,
+    revalidate,
+    // Passthrough to history-aware createHref used by useHref so we get proper
+    // hash-aware URLs in DOM paths
+    createHref: to => init.history.createHref(to),
+    getFetcher,
+    deleteFetcher,
+    dispose,
+    _internalFetchControllers: fetchControllers,
+    _internalActiveDeferreds: activeDeferreds
+  };
+  return router;
+} //#endregion
+////////////////////////////////////////////////////////////////////////////////
+//#region createStaticHandler
+////////////////////////////////////////////////////////////////////////////////
+
+const validActionMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const validRequestMethods = new Set(["GET", "HEAD", ...validActionMethods]);
+function unstable_createStaticHandler(routes) {
+  invariant(routes.length > 0, "You must provide a non-empty routes array to unstable_createStaticHandler");
+  let dataRoutes = convertRoutesToDataRoutes(routes);
+  /**
+   * The query() method is intended for document requests, in which we want to
+   * call an optional action and potentially multiple loaders for all nested
+   * routes.  It returns a StaticHandlerContext object, which is very similar
+   * to the router state (location, loaderData, actionData, errors, etc.) and
+   * also adds SSR-specific information such as the statusCode and headers
+   * from action/loaders Responses.
+   *
+   * It _should_ never throw and should report all errors through the
+   * returned context.errors object, properly associating errors to their error
+   * boundary.  Additionally, it tracks _deepestRenderedBoundaryId which can be
+   * used to emulate React error boundaries during SSr by performing a second
+   * pass only down to the boundaryId.
+   *
+   * The one exception where we do not return a StaticHandlerContext is when a
+   * redirect response is returned or thrown from any action/loader.  We
+   * propagate that out and return the raw Response so the HTTP server can
+   * return it directly.
+   */
+
+  async function query(request) {
+    let url = new URL(request.url);
+    let location = createLocation("", createPath(url), null, "default");
+    let matches = matchRoutes(dataRoutes, location);
+
+    if (!validRequestMethods.has(request.method)) {
+      let {
+        matches: methodNotAllowedMatches,
+        route,
+        error
+      } = getMethodNotAllowedMatches(dataRoutes);
+      return {
+        location,
+        matches: methodNotAllowedMatches,
+        loaderData: {},
+        actionData: null,
+        errors: {
+          [route.id]: error
+        },
+        statusCode: error.status,
+        loaderHeaders: {},
+        actionHeaders: {}
+      };
+    } else if (!matches) {
+      let {
+        matches: notFoundMatches,
+        route,
+        error
+      } = getNotFoundMatches(dataRoutes);
+      return {
+        location,
+        matches: notFoundMatches,
+        loaderData: {},
+        actionData: null,
+        errors: {
+          [route.id]: error
+        },
+        statusCode: error.status,
+        loaderHeaders: {},
+        actionHeaders: {}
+      };
+    }
+
+    let result = await queryImpl(request, location, matches);
+
+    if (result instanceof Response) {
+      return result;
+    } // When returning StaticHandlerContext, we patch back in the location here
+    // since we need it for React Context.  But this helps keep our submit and
+    // loadRouteData operating on a Request instead of a Location
+
+
+    return _extends({
+      location
+    }, result);
+  }
+  /**
+   * The queryRoute() method is intended for targeted route requests, either
+   * for fetch ?_data requests or resource route requests.  In this case, we
+   * are only ever calling a single action or loader, and we are returning the
+   * returned value directly.  In most cases, this will be a Response returned
+   * from the action/loader, but it may be a primitive or other value as well -
+   * and in such cases the calling context should handle that accordingly.
+   *
+   * We do respect the throw/return differentiation, so if an action/loader
+   * throws, then this method will throw the value.  This is important so we
+   * can do proper boundary identification in Remix where a thrown Response
+   * must go to the Catch Boundary but a returned Response is happy-path.
+   *
+   * One thing to note is that any Router-initiated thrown Response (such as a
+   * 404 or 405) will have a custom X-Remix-Router-Error: "yes" header on it
+   * in order to differentiate from responses thrown from user actions/loaders.
+   */
+
+
+  async function queryRoute(request, routeId) {
+    let url = new URL(request.url);
+    let location = createLocation("", createPath(url), null, "default");
+    let matches = matchRoutes(dataRoutes, location);
+
+    if (!validRequestMethods.has(request.method)) {
+      throw createRouterErrorResponse(null, {
+        status: 405,
+        statusText: "Method Not Allowed"
+      });
+    } else if (!matches) {
+      throw createRouterErrorResponse(null, {
+        status: 404,
+        statusText: "Not Found"
+      });
+    }
+
+    let match = routeId ? matches.find(m => m.route.id === routeId) : getTargetMatch(matches, location);
+
+    if (!match) {
+      throw createRouterErrorResponse(null, {
+        status: 404,
+        statusText: "Not Found"
+      });
+    }
+
+    let result = await queryImpl(request, location, matches, match);
+
+    if (result instanceof Response) {
+      return result;
+    }
+
+    let error = result.errors ? Object.values(result.errors)[0] : undefined;
+
+    if (error !== undefined) {
+      // If we got back result.errors, that means the loader/action threw
+      // _something_ that wasn't a Response, but it's not guaranteed/required
+      // to be an `instanceof Error` either, so we have to use throw here to
+      // preserve the "error" state outside of queryImpl.
+      throw error;
+    } // Pick off the right state value to return
+
+
+    let routeData = [result.actionData, result.loaderData].find(v => v);
+    return Object.values(routeData || {})[0];
+  }
+
+  async function queryImpl(request, location, matches, routeMatch) {
+    invariant(request.signal, "query()/queryRoute() requests must contain an AbortController signal");
+
+    try {
+      if (validActionMethods.has(request.method)) {
+        let result = await submit(request, matches, routeMatch || getTargetMatch(matches, location), routeMatch != null);
+        return result;
+      }
+
+      let result = await loadRouteData(request, matches, routeMatch);
+      return result instanceof Response ? result : _extends({}, result, {
+        actionData: null,
+        actionHeaders: {}
+      });
+    } catch (e) {
+      // If the user threw/returned a Response in callLoaderOrAction, we throw
+      // it to bail out and then return or throw here based on whether the user
+      // returned or threw
+      if (isQueryRouteResponse(e)) {
+        if (e.type === ResultType.error && !isRedirectResponse(e.response)) {
+          throw e.response;
+        }
+
+        return e.response;
+      } // Redirects are always returned since they don't propagate to catch
+      // boundaries
+
+
+      if (isRedirectResponse(e)) {
+        return e;
+      }
+
+      throw e;
+    }
+  }
+
+  async function submit(request, matches, actionMatch, isRouteRequest) {
+    let result;
+
+    if (!actionMatch.route.action) {
+      if (isRouteRequest) {
+        throw createRouterErrorResponse(null, {
+          status: 405,
+          statusText: "Method Not Allowed"
+        });
+      }
+
+      result = getMethodNotAllowedResult(request.url);
+    } else {
+      result = await callLoaderOrAction("action", request, actionMatch, matches, undefined, // Basename not currently supported in static handlers
+      true, isRouteRequest);
+
+      if (request.signal.aborted) {
+        let method = isRouteRequest ? "queryRoute" : "query";
+        throw new Error(method + "() call aborted");
+      }
+    }
+
+    if (isRedirectResult(result)) {
+      // Uhhhh - this should never happen, we should always throw these from
+      // callLoaderOrAction, but the type narrowing here keeps TS happy and we
+      // can get back on the "throw all redirect responses" train here should
+      // this ever happen :/
+      throw new Response(null, {
+        status: result.status,
+        headers: {
+          Location: result.location
+        }
+      });
+    }
+
+    if (isDeferredResult(result)) {
+      throw new Error("defer() is not supported in actions");
+    }
+
+    if (isRouteRequest) {
+      // Note: This should only be non-Response values if we get here, since
+      // isRouteRequest should throw any Response received in callLoaderOrAction
+      if (isErrorResult(result)) {
+        let boundaryMatch = findNearestBoundary(matches, actionMatch.route.id);
+        return {
+          matches: [actionMatch],
+          loaderData: {},
+          actionData: null,
+          errors: {
+            [boundaryMatch.route.id]: result.error
+          },
+          // Note: statusCode + headers are unused here since queryRoute will
+          // return the raw Response or value
+          statusCode: 500,
+          loaderHeaders: {},
+          actionHeaders: {}
+        };
+      }
+
+      return {
+        matches: [actionMatch],
+        loaderData: {},
+        actionData: {
+          [actionMatch.route.id]: result.data
+        },
+        errors: null,
+        // Note: statusCode + headers are unused here since queryRoute will
+        // return the raw Response or value
+        statusCode: 200,
+        loaderHeaders: {},
+        actionHeaders: {}
+      };
+    }
+
+    if (isErrorResult(result)) {
+      // Store off the pending error - we use it to determine which loaders
+      // to call and will commit it when we complete the navigation
+      let boundaryMatch = findNearestBoundary(matches, actionMatch.route.id);
+      let context = await loadRouteData(request, matches, undefined, {
+        [boundaryMatch.route.id]: result.error
+      }); // action status codes take precedence over loader status codes
+
+      return _extends({}, context, {
+        statusCode: isRouteErrorResponse(result.error) ? result.error.status : 500,
+        actionData: null,
+        actionHeaders: _extends({}, result.headers ? {
+          [actionMatch.route.id]: result.headers
+        } : {})
+      });
+    }
+
+    let context = await loadRouteData(request, matches);
+    return _extends({}, context, result.statusCode ? {
+      statusCode: result.statusCode
+    } : {}, {
+      actionData: {
+        [actionMatch.route.id]: result.data
+      },
+      actionHeaders: _extends({}, result.headers ? {
+        [actionMatch.route.id]: result.headers
+      } : {})
+    });
+  }
+
+  async function loadRouteData(request, matches, routeMatch, pendingActionError) {
+    let isRouteRequest = routeMatch != null;
+    let requestMatches = routeMatch ? [routeMatch] : getLoaderMatchesUntilBoundary(matches, Object.keys(pendingActionError || {})[0]);
+    let matchesToLoad = requestMatches.filter(m => m.route.loader); // Short circuit if we have no loaders to run
+
+    if (matchesToLoad.length === 0) {
+      return {
+        matches,
+        loaderData: {},
+        errors: pendingActionError || null,
+        statusCode: 200,
+        loaderHeaders: {}
+      };
+    }
+
+    let results = await Promise.all([...matchesToLoad.map(match => callLoaderOrAction("loader", request, match, matches, undefined, // Basename not currently supported in static handlers
+    true, isRouteRequest))]);
+
+    if (request.signal.aborted) {
+      let method = isRouteRequest ? "queryRoute" : "query";
+      throw new Error(method + "() call aborted");
+    } // Can't do anything with these without the Remix side of things, so just
+    // cancel them for now
+
+
+    results.forEach(result => {
+      if (isDeferredResult(result)) {
+        result.deferredData.cancel();
+      }
+    }); // Process and commit output from loaders
+
+    let context = processRouteLoaderData(matches, matchesToLoad, results, pendingActionError);
+    return _extends({}, context, {
+      matches
+    });
+  }
+
+  function createRouterErrorResponse(body, init) {
+    return new Response(body, _extends({}, init, {
+      headers: _extends({}, init.headers, {
+        "X-Remix-Router-Error": "yes"
+      })
+    }));
+  }
+
+  return {
+    dataRoutes,
+    query,
+    queryRoute
+  };
+} //#endregion
+////////////////////////////////////////////////////////////////////////////////
+//#region Helpers
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Given an existing StaticHandlerContext and an error thrown at render time,
+ * provide an updated StaticHandlerContext suitable for a second SSR render
+ */
+
+function getStaticContextFromError(routes, context, error) {
+  let newContext = _extends({}, context, {
+    statusCode: 500,
+    errors: {
+      [context._deepestRenderedBoundaryId || routes[0].id]: error
+    }
+  });
+
+  return newContext;
+} // Normalize navigation options by converting formMethod=GET formData objects to
+// URLSearchParams so they behave identically to links with query params
+
+function normalizeNavigateOptions(to, opts, isFetcher) {
+  if (isFetcher === void 0) {
+    isFetcher = false;
+  }
+
+  let path = typeof to === "string" ? to : createPath(to); // Return location verbatim on non-submission navigations
+
+  if (!opts || !("formMethod" in opts) && !("formData" in opts)) {
+    return {
+      path
+    };
+  } // Create a Submission on non-GET navigations
+
+
+  if (opts.formMethod != null && opts.formMethod !== "get") {
+    return {
+      path,
+      submission: {
+        formMethod: opts.formMethod,
+        formAction: stripHashFromPath(path),
+        formEncType: opts && opts.formEncType || "application/x-www-form-urlencoded",
+        formData: opts.formData
+      }
+    };
+  } // No formData to flatten for GET submission
+
+
+  if (!opts.formData) {
+    return {
+      path
+    };
+  } // Flatten submission onto URLSearchParams for GET submissions
+
+
+  let parsedPath = parsePath(path);
+
+  try {
+    let searchParams = convertFormDataToSearchParams(opts.formData); // Since fetcher GET submissions only run a single loader (as opposed to
+    // navigation GET submissions which run all loaders), we need to preserve
+    // any incoming ?index params
+
+    if (isFetcher && parsedPath.search && hasNakedIndexQuery(parsedPath.search)) {
+      searchParams.append("index", "");
+    }
+
+    parsedPath.search = "?" + searchParams;
+  } catch (e) {
+    return {
+      path,
+      error: new ErrorResponse(400, "Bad Request", "Cannot submit binary form data using GET")
+    };
+  }
+
+  return {
+    path: createPath(parsedPath)
+  };
+}
+
+function getLoaderRedirect(state, redirect) {
+  let {
+    formMethod,
+    formAction,
+    formEncType,
+    formData
+  } = state.navigation;
+  let navigation = {
+    state: "loading",
+    location: createLocation(state.location, redirect.location),
+    formMethod: formMethod || undefined,
+    formAction: formAction || undefined,
+    formEncType: formEncType || undefined,
+    formData: formData || undefined
+  };
+  return navigation;
+} // Filter out all routes below any caught error as they aren't going to
+// render so we don't need to load them
+
+
+function getLoaderMatchesUntilBoundary(matches, boundaryId) {
+  let boundaryMatches = matches;
+
+  if (boundaryId) {
+    let index = matches.findIndex(m => m.route.id === boundaryId);
+
+    if (index >= 0) {
+      boundaryMatches = matches.slice(0, index);
+    }
+  }
+
+  return boundaryMatches;
+}
+
+function getMatchesToLoad(state, matches, submission, location, isRevalidationRequired, cancelledDeferredRoutes, cancelledFetcherLoads, pendingActionData, pendingError, fetchLoadMatches) {
+  let actionResult = pendingError ? Object.values(pendingError)[0] : pendingActionData ? Object.values(pendingActionData)[0] : null; // Pick navigation matches that are net-new or qualify for revalidation
+
+  let boundaryId = pendingError ? Object.keys(pendingError)[0] : undefined;
+  let boundaryMatches = getLoaderMatchesUntilBoundary(matches, boundaryId);
+  let navigationMatches = boundaryMatches.filter((match, index) => match.route.loader != null && (isNewLoader(state.loaderData, state.matches[index], match) || // If this route had a pending deferred cancelled it must be revalidated
+  cancelledDeferredRoutes.some(id => id === match.route.id) || shouldRevalidateLoader(state.location, state.matches[index], submission, location, match, isRevalidationRequired, actionResult))); // Pick fetcher.loads that need to be revalidated
+
+  let revalidatingFetchers = [];
+  fetchLoadMatches && fetchLoadMatches.forEach((_ref10, key) => {
+    let [href, match, fetchMatches] = _ref10;
+
+    // This fetcher was cancelled from a prior action submission - force reload
+    if (cancelledFetcherLoads.includes(key)) {
+      revalidatingFetchers.push([key, href, match, fetchMatches]);
+    } else if (isRevalidationRequired) {
+      let shouldRevalidate = shouldRevalidateLoader(href, match, submission, href, match, isRevalidationRequired, actionResult);
+
+      if (shouldRevalidate) {
+        revalidatingFetchers.push([key, href, match, fetchMatches]);
+      }
+    }
+  });
+  return [navigationMatches, revalidatingFetchers];
+}
+
+function isNewLoader(currentLoaderData, currentMatch, match) {
+  let isNew = // [a] -> [a, b]
+  !currentMatch || // [a, b] -> [a, c]
+  match.route.id !== currentMatch.route.id; // Handle the case that we don't have data for a re-used route, potentially
+  // from a prior error or from a cancelled pending deferred
+
+  let isMissingData = currentLoaderData[match.route.id] === undefined; // Always load if this is a net-new route or we don't yet have data
+
+  return isNew || isMissingData;
+}
+
+function isNewRouteInstance(currentMatch, match) {
+  let currentPath = currentMatch.route.path;
+  return (// param change for this match, /users/123 -> /users/456
+    currentMatch.pathname !== match.pathname || // splat param changed, which is not present in match.path
+    // e.g. /files/images/avatar.jpg -> files/finances.xls
+    currentPath && currentPath.endsWith("*") && currentMatch.params["*"] !== match.params["*"]
+  );
+}
+
+function shouldRevalidateLoader(currentLocation, currentMatch, submission, location, match, isRevalidationRequired, actionResult) {
+  let currentUrl = createURL(currentLocation);
+  let currentParams = currentMatch.params;
+  let nextUrl = createURL(location);
+  let nextParams = match.params; // This is the default implementation as to when we revalidate.  If the route
+  // provides it's own implementation, then we give them full control but
+  // provide this value so they can leverage it if needed after they check
+  // their own specific use cases
+  // Note that fetchers always provide the same current/next locations so the
+  // URL-based checks here don't apply to fetcher shouldRevalidate calls
+
+  let defaultShouldRevalidate = isNewRouteInstance(currentMatch, match) || // Clicked the same link, resubmitted a GET form
+  currentUrl.toString() === nextUrl.toString() || // Search params affect all loaders
+  currentUrl.search !== nextUrl.search || // Forced revalidation due to submission, useRevalidate, or X-Remix-Revalidate
+  isRevalidationRequired;
+
+  if (match.route.shouldRevalidate) {
+    let routeChoice = match.route.shouldRevalidate(_extends({
+      currentUrl,
+      currentParams,
+      nextUrl,
+      nextParams
+    }, submission, {
+      actionResult,
+      defaultShouldRevalidate
+    }));
+
+    if (typeof routeChoice === "boolean") {
+      return routeChoice;
+    }
+  }
+
+  return defaultShouldRevalidate;
+}
+
+async function callLoaderOrAction(type, request, match, matches, basename, isStaticRequest, isRouteRequest) {
+  if (isStaticRequest === void 0) {
+    isStaticRequest = false;
+  }
+
+  if (isRouteRequest === void 0) {
+    isRouteRequest = false;
+  }
+
+  let resultType;
+  let result; // Setup a promise we can race against so that abort signals short circuit
+
+  let reject;
+  let abortPromise = new Promise((_, r) => reject = r);
+
+  let onReject = () => reject();
+
+  request.signal.addEventListener("abort", onReject);
+
+  try {
+    let handler = match.route[type];
+    invariant(handler, "Could not find the " + type + " to run on the \"" + match.route.id + "\" route");
+    result = await Promise.race([handler({
+      request,
+      params: match.params
+    }), abortPromise]);
+  } catch (e) {
+    resultType = ResultType.error;
+    result = e;
+  } finally {
+    request.signal.removeEventListener("abort", onReject);
+  }
+
+  if (result instanceof Response) {
+    let status = result.status; // Process redirects
+
+    if (status >= 300 && status <= 399) {
+      let location = result.headers.get("Location");
+      invariant(location, "Redirects returned/thrown from loaders/actions must have a Location header"); // Support relative routing in redirects
+
+      let activeMatches = matches.slice(0, matches.indexOf(match) + 1);
+      let routePathnames = getPathContributingMatches(activeMatches).map(match => match.pathnameBase);
+      let requestPath = createURL(request.url).pathname;
+      let resolvedLocation = resolveTo(location, routePathnames, requestPath);
+      invariant(createPath(resolvedLocation), "Unable to resolve redirect location: " + result.headers.get("Location")); // Prepend the basename to the redirect location if we have one
+
+      if (basename) {
+        let path = resolvedLocation.pathname;
+        resolvedLocation.pathname = path === "/" ? basename : joinPaths([basename, path]);
+      }
+
+      location = createPath(resolvedLocation); // Don't process redirects in the router during static requests requests.
+      // Instead, throw the Response and let the server handle it with an HTTP
+      // redirect.  We also update the Location header in place in this flow so
+      // basename and relative routing is taken into account
+
+      if (isStaticRequest) {
+        result.headers.set("Location", location);
+        throw result;
+      }
+
+      return {
+        type: ResultType.redirect,
+        status,
+        location,
+        revalidate: result.headers.get("X-Remix-Revalidate") !== null
+      };
+    } // For SSR single-route requests, we want to hand Responses back directly
+    // without unwrapping.  We do this with the QueryRouteResponse wrapper
+    // interface so we can know whether it was returned or thrown
+
+
+    if (isRouteRequest) {
+      // eslint-disable-next-line no-throw-literal
+      throw {
+        type: resultType || ResultType.data,
+        response: result
+      };
+    }
+
+    let data;
+    let contentType = result.headers.get("Content-Type");
+
+    if (contentType && contentType.startsWith("application/json")) {
+      data = await result.json();
+    } else {
+      data = await result.text();
+    }
+
+    if (resultType === ResultType.error) {
+      return {
+        type: resultType,
+        error: new ErrorResponse(status, result.statusText, data),
+        headers: result.headers
+      };
+    }
+
+    return {
+      type: ResultType.data,
+      data,
+      statusCode: result.status,
+      headers: result.headers
+    };
+  }
+
+  if (resultType === ResultType.error) {
+    return {
+      type: resultType,
+      error: result
+    };
+  }
+
+  if (result instanceof DeferredData) {
+    return {
+      type: ResultType.deferred,
+      deferredData: result
+    };
+  }
+
+  return {
+    type: ResultType.data,
+    data: result
+  };
+}
+
+function createRequest(location, signal, submission) {
+  let url = createURL(stripHashFromPath(location)).toString();
+  let init = {
+    signal
+  };
+
+  if (submission) {
+    let {
+      formMethod,
+      formEncType,
+      formData
+    } = submission;
+    init.method = formMethod.toUpperCase();
+    init.body = formEncType === "application/x-www-form-urlencoded" ? convertFormDataToSearchParams(formData) : formData;
+  } // Content-Type is inferred (https://fetch.spec.whatwg.org/#dom-request)
+
+
+  return new Request(url, init);
+}
+
+function convertFormDataToSearchParams(formData) {
+  let searchParams = new URLSearchParams();
+
+  for (let [key, value] of formData.entries()) {
+    invariant(typeof value === "string", 'File inputs are not supported with encType "application/x-www-form-urlencoded", ' + 'please use "multipart/form-data" instead.');
+    searchParams.append(key, value);
+  }
+
+  return searchParams;
+}
+
+function processRouteLoaderData(matches, matchesToLoad, results, pendingError, activeDeferreds) {
+  // Fill in loaderData/errors from our loaders
+  let loaderData = {};
+  let errors = null;
+  let statusCode;
+  let foundError = false;
+  let loaderHeaders = {}; // Process loader results into state.loaderData/state.errors
+
+  results.forEach((result, index) => {
+    let id = matchesToLoad[index].route.id;
+    invariant(!isRedirectResult(result), "Cannot handle redirect results in processLoaderData");
+
+    if (isErrorResult(result)) {
+      // Look upwards from the matched route for the closest ancestor
+      // error boundary, defaulting to the root match
+      let boundaryMatch = findNearestBoundary(matches, id);
+      let error = result.error; // If we have a pending action error, we report it at the highest-route
+      // that throws a loader error, and then clear it out to indicate that
+      // it was consumed
+
+      if (pendingError) {
+        error = Object.values(pendingError)[0];
+        pendingError = undefined;
+      }
+
+      errors = Object.assign(errors || {}, {
+        [boundaryMatch.route.id]: error
+      }); // Once we find our first (highest) error, we set the status code and
+      // prevent deeper status codes from overriding
+
+      if (!foundError) {
+        foundError = true;
+        statusCode = isRouteErrorResponse(result.error) ? result.error.status : 500;
+      }
+
+      if (result.headers) {
+        loaderHeaders[id] = result.headers;
+      }
+    } else if (isDeferredResult(result)) {
+      activeDeferreds && activeDeferreds.set(id, result.deferredData);
+      loaderData[id] = result.deferredData.data; // TODO: Add statusCode/headers once we wire up streaming in Remix
+    } else {
+      loaderData[id] = result.data; // Error status codes always override success status codes, but if all
+      // loaders are successful we take the deepest status code.
+
+      if (result.statusCode != null && result.statusCode !== 200 && !foundError) {
+        statusCode = result.statusCode;
+      }
+
+      if (result.headers) {
+        loaderHeaders[id] = result.headers;
+      }
+    }
+  }); // If we didn't consume the pending action error (i.e., all loaders
+  // resolved), then consume it here
+
+  if (pendingError) {
+    errors = pendingError;
+  }
+
+  return {
+    loaderData,
+    errors,
+    statusCode: statusCode || 200,
+    loaderHeaders
+  };
+}
+
+function processLoaderData(state, matches, matchesToLoad, results, pendingError, revalidatingFetchers, fetcherResults, activeDeferreds) {
+  let {
+    loaderData,
+    errors
+  } = processRouteLoaderData(matches, matchesToLoad, results, pendingError, activeDeferreds); // Process results from our revalidating fetchers
+
+  for (let index = 0; index < revalidatingFetchers.length; index++) {
+    let [key,, match] = revalidatingFetchers[index];
+    invariant(fetcherResults !== undefined && fetcherResults[index] !== undefined, "Did not find corresponding fetcher result");
+    let result = fetcherResults[index]; // Process fetcher non-redirect errors
+
+    if (isErrorResult(result)) {
+      let boundaryMatch = findNearestBoundary(state.matches, match.route.id);
+
+      if (!(errors && errors[boundaryMatch.route.id])) {
+        errors = _extends({}, errors, {
+          [boundaryMatch.route.id]: result.error
+        });
+      }
+
+      state.fetchers.delete(key);
+    } else if (isRedirectResult(result)) {
+      // Should never get here, redirects should get processed above, but we
+      // keep this to type narrow to a success result in the else
+      throw new Error("Unhandled fetcher revalidation redirect");
+    } else if (isDeferredResult(result)) {
+      // Should never get here, deferred data should be awaited for fetchers
+      // in resolveDeferredResults
+      throw new Error("Unhandled fetcher deferred data");
+    } else {
+      let doneFetcher = {
+        state: "idle",
+        data: result.data,
+        formMethod: undefined,
+        formAction: undefined,
+        formEncType: undefined,
+        formData: undefined
+      };
+      state.fetchers.set(key, doneFetcher);
+    }
+  }
+
+  return {
+    loaderData,
+    errors
+  };
+}
+
+function mergeLoaderData(loaderData, newLoaderData, matches) {
+  let mergedLoaderData = _extends({}, newLoaderData);
+
+  matches.forEach(match => {
+    let id = match.route.id;
+
+    if (newLoaderData[id] === undefined && loaderData[id] !== undefined) {
+      mergedLoaderData[id] = loaderData[id];
+    }
+  });
+  return mergedLoaderData;
+} // Find the nearest error boundary, looking upwards from the leaf route (or the
+// route specified by routeId) for the closest ancestor error boundary,
+// defaulting to the root match
+
+
+function findNearestBoundary(matches, routeId) {
+  let eligibleMatches = routeId ? matches.slice(0, matches.findIndex(m => m.route.id === routeId) + 1) : [...matches];
+  return eligibleMatches.reverse().find(m => m.route.hasErrorBoundary === true) || matches[0];
+}
+
+function getShortCircuitMatches(routes, status, statusText) {
+  // Prefer a root layout route if present, otherwise shim in a route object
+  let route = routes.find(r => r.index || !r.path || r.path === "/") || {
+    id: "__shim-" + status + "-route__"
+  };
+  return {
+    matches: [{
+      params: {},
+      pathname: "",
+      pathnameBase: "",
+      route
+    }],
+    route,
+    error: new ErrorResponse(status, statusText, null)
+  };
+}
+
+function getNotFoundMatches(routes) {
+  return getShortCircuitMatches(routes, 404, "Not Found");
+}
+
+function getMethodNotAllowedMatches(routes) {
+  return getShortCircuitMatches(routes, 405, "Method Not Allowed");
+}
+
+function getMethodNotAllowedResult(path) {
+  let href = typeof path === "string" ? path : createPath(path);
+  console.warn("You're trying to submit to a route that does not have an action.  To " + "fix this, please add an `action` function to the route for " + ("[" + href + "]"));
+  return {
+    type: ResultType.error,
+    error: new ErrorResponse(405, "Method Not Allowed", "")
+  };
+} // Find any returned redirect errors, starting from the lowest match
+
+
+function findRedirect(results) {
+  for (let i = results.length - 1; i >= 0; i--) {
+    let result = results[i];
+
+    if (isRedirectResult(result)) {
+      return result;
+    }
+  }
+}
+
+function stripHashFromPath(path) {
+  let parsedPath = typeof path === "string" ? parsePath(path) : path;
+  return createPath(_extends({}, parsedPath, {
+    hash: ""
+  }));
+}
+
+function isHashChangeOnly(a, b) {
+  return a.pathname === b.pathname && a.search === b.search && a.hash !== b.hash;
+}
+
+function isDeferredResult(result) {
+  return result.type === ResultType.deferred;
+}
+
+function isErrorResult(result) {
+  return result.type === ResultType.error;
+}
+
+function isRedirectResult(result) {
+  return (result && result.type) === ResultType.redirect;
+}
+
+function isRedirectResponse(result) {
+  if (!(result instanceof Response)) {
+    return false;
+  }
+
+  let status = result.status;
+  let location = result.headers.get("Location");
+  return status >= 300 && status <= 399 && location != null;
+}
+
+function isQueryRouteResponse(obj) {
+  return obj && obj.response instanceof Response && (obj.type === ResultType.data || ResultType.error);
+}
+
+async function resolveDeferredResults(currentMatches, matchesToLoad, results, signal, isFetcher, currentLoaderData) {
+  for (let index = 0; index < results.length; index++) {
+    let result = results[index];
+    let match = matchesToLoad[index];
+    let currentMatch = currentMatches.find(m => m.route.id === match.route.id);
+    let isRevalidatingLoader = currentMatch != null && !isNewRouteInstance(currentMatch, match) && (currentLoaderData && currentLoaderData[match.route.id]) !== undefined;
+
+    if (isDeferredResult(result) && (isFetcher || isRevalidatingLoader)) {
+      // Note: we do not have to touch activeDeferreds here since we race them
+      // against the signal in resolveDeferredData and they'll get aborted
+      // there if needed
+      await resolveDeferredData(result, signal, isFetcher).then(result => {
+        if (result) {
+          results[index] = result || results[index];
+        }
+      });
+    }
+  }
+}
+
+async function resolveDeferredData(result, signal, unwrap) {
+  if (unwrap === void 0) {
+    unwrap = false;
+  }
+
+  let aborted = await result.deferredData.resolveData(signal);
+
+  if (aborted) {
+    return;
+  }
+
+  if (unwrap) {
+    try {
+      return {
+        type: ResultType.data,
+        data: result.deferredData.unwrappedData
+      };
+    } catch (e) {
+      // Handle any TrackedPromise._error values encountered while unwrapping
+      return {
+        type: ResultType.error,
+        error: e
+      };
+    }
+  }
+
+  return {
+    type: ResultType.data,
+    data: result.deferredData.data
+  };
+}
+
+function hasNakedIndexQuery(search) {
+  return new URLSearchParams(search).getAll("index").some(v => v === "");
+} // Note: This should match the format exported by useMatches, so if you change
+// this please also change that :)  Eventually we'll DRY this up
+
+
+function createUseMatchesMatch(match, loaderData) {
+  let {
+    route,
+    pathname,
+    params
+  } = match;
+  return {
+    id: route.id,
+    pathname,
+    params,
+    data: loaderData[route.id],
+    handle: route.handle
+  };
+}
+
+function getTargetMatch(matches, location) {
+  let search = typeof location === "string" ? parsePath(location).search : location.search;
+
+  if (matches[matches.length - 1].route.index && hasNakedIndexQuery(search || "")) {
+    // Return the leaf index route when index is present
+    return matches[matches.length - 1];
+  } // Otherwise grab the deepest "path contributing" match (ignoring index and
+  // pathless layout routes)
+
+
+  let pathMatches = getPathContributingMatches(matches);
+  return pathMatches[pathMatches.length - 1];
+} //#endregion
+
+
+//# sourceMappingURL=router.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/@restart/hooks/esm/useCallbackRef.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/@restart/hooks/esm/useCallbackRef.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ useCallbackRef)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+
+/**
+ * A convenience hook around `useState` designed to be paired with
+ * the component [callback ref](https://reactjs.org/docs/refs-and-the-dom.html#callback-refs) api.
+ * Callback refs are useful over `useRef()` when you need to respond to the ref being set
+ * instead of lazily accessing it in an effect.
+ *
+ * ```ts
+ * const [element, attachRef] = useCallbackRef<HTMLDivElement>()
+ *
+ * useEffect(() => {
+ *   if (!element) return
+ *
+ *   const calendar = new FullCalendar.Calendar(element)
+ *
+ *   return () => {
+ *     calendar.destroy()
+ *   }
+ * }, [element])
+ *
+ * return <div ref={attachRef} />
+ * ```
+ *
+ * @category refs
+ */
+
+function useCallbackRef() {
+  return (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+}
+
+/***/ }),
+
 /***/ "./node_modules/@restart/hooks/esm/useCommittedRef.js":
 /*!************************************************************!*\
   !*** ./node_modules/@restart/hooks/esm/useCommittedRef.js ***!
@@ -507,6 +6891,48 @@ function useEventCallback(fn) {
 
 /***/ }),
 
+/***/ "./node_modules/@restart/hooks/esm/useEventListener.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@restart/hooks/esm/useEventListener.js ***!
+  \*************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ useEventListener)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _useEventCallback__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./useEventCallback */ "./node_modules/@restart/hooks/esm/useEventCallback.js");
+
+
+
+/**
+ * Attaches an event handler outside directly to specified DOM element
+ * bypassing the react synthetic event system.
+ *
+ * @param element The target to listen for events on
+ * @param event The DOM event name
+ * @param handler An event handler
+ * @param capture Whether or not to listen during the capture event phase
+ */
+function useEventListener(eventTarget, event, listener, capture) {
+  if (capture === void 0) {
+    capture = false;
+  }
+
+  var handler = (0,_useEventCallback__WEBPACK_IMPORTED_MODULE_1__["default"])(listener);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var target = typeof eventTarget === 'function' ? eventTarget() : eventTarget;
+    target.addEventListener(event, handler, capture);
+    return function () {
+      return target.removeEventListener(event, handler, capture);
+    };
+  }, [eventTarget]);
+}
+
+/***/ }),
+
 /***/ "./node_modules/@restart/hooks/esm/useForceUpdate.js":
 /*!***********************************************************!*\
   !*** ./node_modules/@restart/hooks/esm/useForceUpdate.js ***!
@@ -546,6 +6972,49 @@ function useForceUpdate() {
       dispatch = _useReducer[1];
 
   return dispatch;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@restart/hooks/esm/useGlobalListener.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/@restart/hooks/esm/useGlobalListener.js ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ useGlobalListener)
+/* harmony export */ });
+/* harmony import */ var _useEventListener__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./useEventListener */ "./node_modules/@restart/hooks/esm/useEventListener.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+
+
+
+/**
+ * Attaches an event handler outside directly to the `document`,
+ * bypassing the react synthetic event system.
+ *
+ * ```ts
+ * useGlobalListener('keydown', (event) => {
+ *  console.log(event.key)
+ * })
+ * ```
+ *
+ * @param event The DOM event name
+ * @param handler An event handler
+ * @param capture Whether or not to listen during the capture event phase
+ */
+function useGlobalListener(event, handler, capture) {
+  if (capture === void 0) {
+    capture = false;
+  }
+
+  var documentTarget = (0,react__WEBPACK_IMPORTED_MODULE_1__.useCallback)(function () {
+    return document;
+  }, []);
+  return (0,_useEventListener__WEBPACK_IMPORTED_MODULE_0__["default"])(documentTarget, event, handler, capture);
 }
 
 /***/ }),
@@ -652,6 +7121,75 @@ function useMounted() {
   }, []);
   return isMounted.current;
 }
+
+/***/ }),
+
+/***/ "./node_modules/@restart/hooks/esm/usePrevious.js":
+/*!********************************************************!*\
+  !*** ./node_modules/@restart/hooks/esm/usePrevious.js ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ usePrevious)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+
+/**
+ * Store the last of some value. Tracked via a `Ref` only updating it
+ * after the component renders.
+ *
+ * Helpful if you need to compare a prop value to it's previous value during render.
+ *
+ * ```ts
+ * function Component(props) {
+ *   const lastProps = usePrevious(props)
+ *
+ *   if (lastProps.foo !== props.foo)
+ *     resetValueFromProps(props.foo)
+ * }
+ * ```
+ *
+ * @param value the value to track
+ */
+
+function usePrevious(value) {
+  var ref = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ref.current = value;
+  });
+  return ref.current;
+}
+
+/***/ }),
+
+/***/ "./node_modules/@restart/hooks/esm/useSafeState.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@restart/hooks/esm/useSafeState.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _useMounted__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./useMounted */ "./node_modules/@restart/hooks/esm/useMounted.js");
+
+
+
+function useSafeState(state) {
+  var isMounted = (0,_useMounted__WEBPACK_IMPORTED_MODULE_1__["default"])();
+  return [state[0], (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (nextState) {
+    if (!isMounted()) return;
+    return state[1](nextState);
+  }, [isMounted, state[1]])];
+}
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (useSafeState);
 
 /***/ }),
 
@@ -871,14 +7409,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _reducers__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./reducers */ "./resources/js/reducers/index.jsx");
 /* harmony import */ var _reducers__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_reducers__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var react_redux__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-redux */ "./node_modules/react-redux/es/index.js");
-/* harmony import */ var _pages_HomePage__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./pages/HomePage */ "./resources/js/pages/HomePage.jsx");
-/* harmony import */ var _components_footer_Footer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./components/footer/Footer */ "./resources/js/components/footer/Footer.jsx");
-/* harmony import */ var _components_header_Header__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./components/header/Header */ "./resources/js/components/header/Header.jsx");
-/* harmony import */ var _pages_ShopPage__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./pages/ShopPage */ "./resources/js/pages/ShopPage.jsx");
-Object(function webpackMissingModule() { var e = new Error("Cannot find module 'react-router-dom'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
-
-
-
+/* harmony import */ var _index__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./index */ "./resources/js/index.jsx");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/dist/index.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 
 
 
@@ -890,9 +7423,13 @@ Object(function webpackMissingModule() { var e = new Error("Cannot find module '
 
 // const store = createStore(rootReducer, applyMiddleware(thunk))
 
-react_dom__WEBPACK_IMPORTED_MODULE_1__.render(
-// <Provider store={store}>
 
+react_dom__WEBPACK_IMPORTED_MODULE_1__.render(
+/*#__PURE__*/
+// <Provider store={store}>
+(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_7__.BrowserRouter, {
+  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_index__WEBPACK_IMPORTED_MODULE_5__["default"], {})
+}),
 // </Provider>,
 document.getElementById('root'));
 
@@ -913,10 +7450,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _CarouselItem__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CarouselItem */ "./resources/js/components/Banner/CarouselItem.jsx");
 /* harmony import */ var _Banner_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Banner.css */ "./resources/js/components/Banner/Banner.css");
 /* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Container.js");
-/* harmony import */ var _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @fortawesome/free-solid-svg-icons */ "./node_modules/@fortawesome/free-solid-svg-icons/index.mjs");
-/* harmony import */ var _fortawesome_react_fontawesome__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @fortawesome/react-fontawesome */ "./node_modules/@fortawesome/react-fontawesome/index.es.js");
+/* harmony import */ var _BannerTitle__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./BannerTitle */ "./resources/js/components/Banner/BannerTitle.jsx");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
-
 
 
 
@@ -927,35 +7462,67 @@ __webpack_require__.r(__webpack_exports__);
 var Banner = function Banner() {
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
     className: "banner mt-4",
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-      className: "mb-2",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        className: "row",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-          className: "col-6 mr-auto my-auto",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
-            className: "h4",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("b", {
-              children: "On Sale"
-            })
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_BannerTitle__WEBPACK_IMPORTED_MODULE_3__["default"], {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_CarouselItem__WEBPACK_IMPORTED_MODULE_1__["default"], {})]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Banner);
+
+/***/ }),
+
+/***/ "./resources/js/components/Banner/BannerTitle.jsx":
+/*!********************************************************!*\
+  !*** ./resources/js/components/Banner/BannerTitle.jsx ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/dist/index.js");
+/* harmony import */ var _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @fortawesome/free-solid-svg-icons */ "./node_modules/@fortawesome/free-solid-svg-icons/index.mjs");
+/* harmony import */ var _fortawesome_react_fontawesome__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @fortawesome/react-fontawesome */ "./node_modules/@fortawesome/react-fontawesome/index.es.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+
+var BannerTitle = function BannerTitle() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+    className: "mb-2",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+      className: "row",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+        className: "col-6 mr-auto my-auto",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("p", {
+          className: "h4",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("b", {
+            children: "On Sale"
           })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-          className: "col-6 my-auto justify-content-end d-flex",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+        className: "col-6 my-auto justify-content-end d-flex",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Link, {
+          to: "/shop",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("button", {
             type: "button",
             className: "btn btn-secondary btn-view-all",
-            children: ["View All ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_fortawesome_react_fontawesome__WEBPACK_IMPORTED_MODULE_3__.FontAwesomeIcon, {
-              icon: _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_6__.faCaretRight,
+            children: ["View All ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_fortawesome_react_fontawesome__WEBPACK_IMPORTED_MODULE_1__.FontAwesomeIcon, {
+              icon: _fortawesome_free_solid_svg_icons__WEBPACK_IMPORTED_MODULE_4__.faCaretRight,
               size: "1x",
               className: "icon-viewAll"
             })]
           })
-        })]
-      })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_CarouselItem__WEBPACK_IMPORTED_MODULE_1__["default"], {})]
+        })
+      })]
+    })
   });
 };
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Banner);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (BannerTitle);
 
 /***/ }),
 
@@ -1473,6 +8040,97 @@ var Feature = function Feature() {
 
 /***/ }),
 
+/***/ "./resources/js/components/filter/Filter.jsx":
+/*!***************************************************!*\
+  !*** ./resources/js/components/filter/Filter.jsx ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Card.js");
+/* harmony import */ var _Filter_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Filter.css */ "./resources/js/components/filter/Filter.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+var Filter = function Filter() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("b", {
+      children: "Filter By"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      border: "secondary",
+      className: "card-filter",
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Body, {
+        className: "card-body",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Title, {
+          children: "Category"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "Category_name"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "Category #1"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "Category #2"
+        })]
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      border: "secondary",
+      className: "card-filter",
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Body, {
+        className: "card-body",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Title, {
+          children: "Author"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "Author_name"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "Author #1"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "Author #2"
+        })]
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      border: "secondary",
+      className: "card-filter",
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Body, {
+        className: "card-body",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Title, {
+          children: "Star"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "1 Star"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "2 Star"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "3 Star"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "4 Star"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Text, {
+          className: "card-text",
+          children: "5 Star"
+        })]
+      })
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Filter);
+
+/***/ }),
+
 /***/ "./resources/js/components/footer/Footer.jsx":
 /*!***************************************************!*\
   !*** ./resources/js/components/footer/Footer.jsx ***!
@@ -1540,9 +8198,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Navbar.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/dist/index.js");
 /* harmony import */ var _assets_bookworm_icon_svg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../assets/bookworm_icon.svg */ "./resources/assets/bookworm_icon.svg");
 /* harmony import */ var _Header_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Header.css */ "./resources/js/components/header/Header.css");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
 
 
 
@@ -1582,30 +8242,30 @@ var Header = function Header() {
           className: "navbar-nav ml-auto",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
             className: "nav-item active",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("a", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
               className: "nav-link",
-              href: "#",
+              to: "/",
               children: "Home"
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
             className: "nav-item",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("a", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
               className: "nav-link",
-              href: "#",
+              to: "/shop",
               children: "Shop"
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
             className: "nav-item",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("a", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
               className: "nav-link",
-              href: "#",
+              to: "#",
               children: "About"
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
             className: "nav-item",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("a", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
               className: "nav-link",
-              href: "#",
+              to: "#",
               children: ["Cart (", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
                 children: "0"
               }), ") "]
@@ -1617,6 +8277,606 @@ var Header = function Header() {
   });
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Header);
+
+/***/ }),
+
+/***/ "./resources/js/components/paginate/Paginate.jsx":
+/*!*******************************************************!*\
+  !*** ./resources/js/components/paginate/Paginate.jsx ***!
+  \*******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-bootstrap/Pagination */ "./node_modules/react-bootstrap/esm/Pagination.js");
+/* harmony import */ var _Paginate_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Paginate.css */ "./resources/js/components/paginate/Paginate.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+var Paginate = function Paginate() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"], {
+    className: "paginate ",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"].First, {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"].Prev, {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+      children: 1
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+      children: 2
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+      children: 3
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"].Next, {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap_Pagination__WEBPACK_IMPORTED_MODULE_3__["default"].Last, {})]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Paginate);
+
+/***/ }),
+
+/***/ "./resources/js/components/shopTitle/ShopTitle.jsx":
+/*!*********************************************************!*\
+  !*** ./resources/js/components/shopTitle/ShopTitle.jsx ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _ShopTitle_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ShopTitle.css */ "./resources/js/components/shopTitle/ShopTitle.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+var ShopTitle = function ShopTitle() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+      className: "main-title",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+        className: "main-title-information",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("b", {
+          className: "main-title-information-1",
+          children: "Books"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+          className: "ml-3",
+          children: " (Filtered by Category #1)"
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("hr", {})]
+    })
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ShopTitle);
+
+/***/ }),
+
+/***/ "./resources/js/components/wrapper/Wrapper.jsx":
+/*!*****************************************************!*\
+  !*** ./resources/js/components/wrapper/Wrapper.jsx ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _shopTitle_ShopTitle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../shopTitle/ShopTitle */ "./resources/js/components/shopTitle/ShopTitle.jsx");
+/* harmony import */ var _WrapperItems__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./WrapperItems */ "./resources/js/components/wrapper/WrapperItems.jsx");
+/* harmony import */ var _WrapperTitle__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./WrapperTitle */ "./resources/js/components/wrapper/WrapperTitle.jsx");
+/* harmony import */ var _Wrapper_css__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./Wrapper.css */ "./resources/js/components/wrapper/Wrapper.css");
+/* harmony import */ var _paginate_Paginate__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../paginate/Paginate */ "./resources/js/components/paginate/Paginate.jsx");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+
+
+
+
+var Wrapper = function Wrapper() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_WrapperTitle__WEBPACK_IMPORTED_MODULE_3__["default"], {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_WrapperItems__WEBPACK_IMPORTED_MODULE_2__["default"], {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_paginate_Paginate__WEBPACK_IMPORTED_MODULE_5__["default"], {})]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Wrapper);
+
+/***/ }),
+
+/***/ "./resources/js/components/wrapper/WrapperItems.jsx":
+/*!**********************************************************!*\
+  !*** ./resources/js/components/wrapper/WrapperItems.jsx ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../assets/bookcover/book1.jpg */ "./resources/assets/bookcover/book1.jpg");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Row.js");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Col.js");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Card.js");
+/* harmony import */ var _WrapperItems_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./WrapperItems.css */ "./resources/js/components/wrapper/WrapperItems.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+
+
+var WrapperItems = function WrapperItems() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+    className: "card-items",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"], {
+      className: "row-card-items",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"], {
+      className: "row-card-items",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"], {
+      className: "row-card-items",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"], {
+      className: "row-card-items",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
+        sm: 6,
+        md: 3,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          style: {
+            width: 'auto'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Img, {
+            variant: "top",
+            src: _assets_bookcover_book1_jpg__WEBPACK_IMPORTED_MODULE_1__["default"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Body, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Title, {
+              children: "Card Title"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Some quick example text to build on the card title and make up the bulk of the card's content."
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_6__["default"].Text, {
+              children: "Price"
+            })]
+          })]
+        })
+      })]
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (WrapperItems);
+
+/***/ }),
+
+/***/ "./resources/js/components/wrapper/WrapperTitle.jsx":
+/*!**********************************************************!*\
+  !*** ./resources/js/components/wrapper/WrapperTitle.jsx ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Dropdown.js");
+/* harmony import */ var _WrapperTitle_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./WrapperTitle.css */ "./resources/js/components/wrapper/WrapperTitle.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+var WrapperTitle = function WrapperTitle() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+    className: "wrapper-title",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("p", {
+      children: "Showing 1-12 of 126 of books"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+      className: "wrapper-dropdown",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"], {
+        className: "dropdown-sort",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Toggle, {
+          id: "dropdown-button-dark-example1",
+          variant: "secondary",
+          children: "Sort by on sale"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Menu, {
+          variant: "dark",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-1",
+            active: true,
+            children: "Sort by on sale"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-2",
+            children: "Sort by popularity"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-3",
+            children: "Sort by price: low to high"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-4",
+            children: "Sort by price: high to low"
+          })]
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"], {
+        className: "dropdown-show",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Toggle, {
+          id: "dropdown-button-dark-example1",
+          variant: "secondary",
+          children: "Show 20"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Menu, {
+          variant: "dark",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-1",
+            active: true,
+            children: "Show 5"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-2",
+            children: "Show 15"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-3",
+            children: "Show 20"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_3__["default"].Item, {
+            href: "#/action-4",
+            children: "Show 25"
+          })]
+        })]
+      })]
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (WrapperTitle);
+
+/***/ }),
+
+/***/ "./resources/js/index.jsx":
+/*!********************************!*\
+  !*** ./resources/js/index.jsx ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _components_footer_Footer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./components/footer/Footer */ "./resources/js/components/footer/Footer.jsx");
+/* harmony import */ var _components_header_Header__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/header/Header */ "./resources/js/components/header/Header.jsx");
+/* harmony import */ var _pages_HomePage__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./pages/HomePage */ "./resources/js/pages/HomePage.jsx");
+/* harmony import */ var _pages_ShopPage__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./pages/ShopPage */ "./resources/js/pages/ShopPage.jsx");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/dist/index.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+
+
+
+var App = function App() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_6__.Routes, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_6__.Route, {
+      path: "/",
+      element: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_pages_ShopPage__WEBPACK_IMPORTED_MODULE_4__["default"], {})
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_6__.Route, {
+      path: "/shop",
+      element: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_pages_ShopPage__WEBPACK_IMPORTED_MODULE_4__["default"], {})
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (App);
 
 /***/ }),
 
@@ -1650,7 +8910,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var HomePage = function HomePage() {
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_7__["default"], {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_header_Header__WEBPACK_IMPORTED_MODULE_5__["default"], {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_7__["default"], {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_Banner_Banner__WEBPACK_IMPORTED_MODULE_1__["default"], {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_feature_Feature__WEBPACK_IMPORTED_MODULE_3__["default"], {})]
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_footer_Footer__WEBPACK_IMPORTED_MODULE_4__["default"], {})]
   });
@@ -1671,12 +8931,39 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Container.js");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Row.js");
+/* harmony import */ var react_bootstrap__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! react-bootstrap */ "./node_modules/react-bootstrap/esm/Col.js");
+/* harmony import */ var _components_filter_Filter__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../components/filter/Filter */ "./resources/js/components/filter/Filter.jsx");
+/* harmony import */ var _components_footer_Footer__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../components/footer/Footer */ "./resources/js/components/footer/Footer.jsx");
+/* harmony import */ var _components_header_Header__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../components/header/Header */ "./resources/js/components/header/Header.jsx");
+/* harmony import */ var _components_shopTitle_ShopTitle__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../components/shopTitle/ShopTitle */ "./resources/js/components/shopTitle/ShopTitle.jsx");
+/* harmony import */ var _components_wrapper_Wrapper__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../components/wrapper/Wrapper */ "./resources/js/components/wrapper/Wrapper.jsx");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+
+
+
+
+
+
+
 
 
 var ShopPage = function ShopPage() {
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
-    children: "ShopPage"
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_header_Header__WEBPACK_IMPORTED_MODULE_3__["default"], {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_7__["default"], {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_shopTitle_ShopTitle__WEBPACK_IMPORTED_MODULE_4__["default"], {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_8__["default"], {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_9__["default"], {
+          sm: 3,
+          md: 3,
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_filter_Filter__WEBPACK_IMPORTED_MODULE_1__["default"], {})
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_9__["default"], {
+          sm: 9,
+          md: 9,
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_wrapper_Wrapper__WEBPACK_IMPORTED_MODULE_5__["default"], {})
+        })]
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_components_footer_Footer__WEBPACK_IMPORTED_MODULE_2__["default"], {})]
   });
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ShopPage);
@@ -1832,6 +9119,30 @@ ___CSS_LOADER_EXPORT___.push([module.id, ".feature-select {\r\n    margin-top: 8
 
 /***/ }),
 
+/***/ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/filter/Filter.css":
+/*!*************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/filter/Filter.css ***!
+  \*************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, ".card-filter {\r\n    width: '15rem';\r\n    margin-top: 10px;\r\n}\r\n\r\n.card-filter .card-body{\r\n    padding: 10px;\r\n}\r\n\r\n.card-filter .card-body .card-text {\r\n    padding: 10px;\r\n    margin-top: 0;\r\n    margin-bottom: 0;\r\n}", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
 /***/ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/footer/Footer.css":
 /*!*************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/footer/Footer.css ***!
@@ -1874,6 +9185,126 @@ __webpack_require__.r(__webpack_exports__);
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
 ___CSS_LOADER_EXPORT___.push([module.id, "header nav.navbar {\r\n    overflow: hidden;\r\n    position: fixed;\r\n    z-index: 10000000000;\r\n    top: 0;\r\n    width: 100%;\r\n}\r\nheader nav.navbar .collapse {\r\n    margin-right: 1.5rem;\r\n    justify-content: end;\r\n}\r\n\r\nheader nav.navbar .collapse li {\r\n    padding: 0.5rem;\r\n}\r\n\r\nheader nav.navbar .navbar-brand {\r\n    display: flex;\r\n    flex-direction: row;\r\n    align-content: center;\r\n    align-items: center;\r\n    margin-left: 15px;\r\n}\r\n\r\nheader nav.navbar .navbar-brand b{\r\n    margin-left: 5px;\r\n}\r\n\r\ndiv.banner div.col-auto button.btn-view-all {\r\n    background-color: #868f96;\r\n}\r\n\r\ndiv.banner #carouselIndexIndicators {\r\n    border: 0.5px solid #868f96;\r\n}\r\n\r\ndiv.banner #carouselIndexIndicators .carousel-control-prev,\r\ndiv.banner #carouselIndexIndicators .carousel-control-next {\r\n    width: 5%;\r\n}\r\n\r\ndiv.banner #carouselIndexIndicators .carousel-inner .carousel-item img {\r\n    height: 27rem;\r\n}", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/paginate/Paginate.css":
+/*!*****************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/paginate/Paginate.css ***!
+  \*****************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, ".paginate {\r\n    justify-content: center;\r\n    margin-top: 10px;\r\n}", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/shopTitle/ShopTitle.css":
+/*!*******************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/shopTitle/ShopTitle.css ***!
+  \*******************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "div.wrapper-about .main-title-information {\r\n    display: flex;\r\n    flex-direction: row;\r\n    align-items: baseline;\r\n}\r\ndiv.main-title div.main-title-information .main-title-information-1 {\r\n    font-size: 1.5rem !important;\r\n}", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/Wrapper.css":
+/*!***************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/Wrapper.css ***!
+  \***************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, ".wrapper-container {\r\n    margin-top: 0;\r\n    padding-right: 0;\r\n    padding-left: 0;\r\n}", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/WrapperItems.css":
+/*!********************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/WrapperItems.css ***!
+  \********************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, ".btn-featured-books {\r\n    text-align: center;\r\n}\r\n\r\n.card-items {\r\n    padding-top: 10px;\r\n    margin-top: 30px;\r\n}\r\n\r\n.row-card-items{\r\n    margin-top: 20px;\r\n}", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/WrapperTitle.css":
+/*!********************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/WrapperTitle.css ***!
+  \********************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, ".wrapper-title {\r\n    display: inline;\r\n}\r\n\r\n.wrapper-title p {\r\n    float: left;\r\n}\r\n\r\n.wrapper-title .wrapper-dropdown .dropdown-sort{\r\n    float:left;\r\n}\r\n\r\n.wrapper-title .wrapper-dropdown .dropdown-show{\r\n    float: right;\r\n    margin-left: 10px;\r\n}\r\n\r\n.wrapper-title .wrapper-dropdown {\r\n    display: inline;\r\n    float: right;\r\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -2064,6 +9495,34 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./node_modules/dom-helpers/esm/contains.js":
+/*!**************************************************!*\
+  !*** ./node_modules/dom-helpers/esm/contains.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ contains)
+/* harmony export */ });
+/* eslint-disable no-bitwise, no-cond-assign */
+
+/**
+ * Checks if an element contains another given element.
+ * 
+ * @param context the context element
+ * @param node the element to check
+ */
+function contains(context, node) {
+  // HTML DOM and SVG DOM may have different support levels,
+  // so we need to check on context instead of a document root element.
+  if (context.contains) return context.contains(node);
+  if (context.compareDocumentPosition) return context === node || !!(context.compareDocumentPosition(node) & 16);
+}
+
+/***/ }),
+
 /***/ "./node_modules/dom-helpers/esm/css.js":
 /*!*********************************************!*\
   !*** ./node_modules/dom-helpers/esm/css.js ***!
@@ -2135,6 +9594,30 @@ __webpack_require__.r(__webpack_exports__);
 
 function getComputedStyle(node, psuedoElement) {
   return (0,_ownerWindow__WEBPACK_IMPORTED_MODULE_0__["default"])(node).getComputedStyle(node, psuedoElement);
+}
+
+/***/ }),
+
+/***/ "./node_modules/dom-helpers/esm/hasClass.js":
+/*!**************************************************!*\
+  !*** ./node_modules/dom-helpers/esm/hasClass.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ hasClass)
+/* harmony export */ });
+/**
+ * Checks if a given element has a CSS class.
+ * 
+ * @param element the element
+ * @param className the CSS class name
+ */
+function hasClass(element, className) {
+  if (element.classList) return !!className && element.classList.contains(className);
+  return (" " + (element.className.baseVal || element.className) + " ").indexOf(" " + className + " ") !== -1;
 }
 
 /***/ }),
@@ -2224,6 +9707,40 @@ function listen(node, eventName, handler, options) {
 }
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (listen);
+
+/***/ }),
+
+/***/ "./node_modules/dom-helpers/esm/matches.js":
+/*!*************************************************!*\
+  !*** ./node_modules/dom-helpers/esm/matches.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ matches)
+/* harmony export */ });
+var matchesImpl;
+/**
+ * Checks if a given element matches a selector.
+ * 
+ * @param node the element
+ * @param selector the selector
+ */
+
+function matches(node, selector) {
+  if (!matchesImpl) {
+    var body = document.body;
+    var nativeMatch = body.matches || body.matchesSelector || body.webkitMatchesSelector || body.mozMatchesSelector || body.msMatchesSelector;
+
+    matchesImpl = function matchesImpl(n, s) {
+      return nativeMatch.call(n, s);
+    };
+  }
+
+  return matchesImpl(node, selector);
+}
 
 /***/ }),
 
@@ -2790,6 +10307,39 @@ function all() {
   }
 
   return (0, _createChainableTypeChecker2.default)(allPropTypes);
+}
+module.exports = exports['default'];
+
+/***/ }),
+
+/***/ "./node_modules/prop-types-extra/lib/isRequiredForA11y.js":
+/*!****************************************************************!*\
+  !*** ./node_modules/prop-types-extra/lib/isRequiredForA11y.js ***!
+  \****************************************************************/
+/***/ ((module, exports) => {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
+exports["default"] = isRequiredForA11y;
+function isRequiredForA11y(validator) {
+  return function validate(props, propName, componentName, location, propFullName) {
+    var componentNameSafe = componentName || '<<anonymous>>';
+    var propFullNameSafe = propFullName || propName;
+
+    if (props[propName] == null) {
+      return new Error('The ' + location + ' `' + propFullNameSafe + '` is required to make ' + ('`' + componentNameSafe + '` accessible for users of assistive ') + 'technologies such as screen readers.');
+    }
+
+    for (var _len = arguments.length, args = Array(_len > 5 ? _len - 5 : 0), _key = 5; _key < _len; _key++) {
+      args[_key - 5] = arguments[_key];
+    }
+
+    return validator.apply(undefined, [props, propName, componentName, location, propFullName].concat(args));
+  };
 }
 module.exports = exports['default'];
 
@@ -4983,6 +12533,420 @@ Container.defaultProps = defaultProps;
 
 /***/ }),
 
+/***/ "./node_modules/react-bootstrap/esm/Dropdown.js":
+/*!******************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/Dropdown.js ***!
+  \******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_overlays_Dropdown__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! react-overlays/Dropdown */ "./node_modules/react-overlays/esm/Dropdown.js");
+/* harmony import */ var uncontrollable__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! uncontrollable */ "./node_modules/uncontrollable/lib/esm/index.js");
+/* harmony import */ var _restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @restart/hooks/useEventCallback */ "./node_modules/@restart/hooks/esm/useEventCallback.js");
+/* harmony import */ var _DropdownItem__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./DropdownItem */ "./node_modules/react-bootstrap/esm/DropdownItem.js");
+/* harmony import */ var _DropdownMenu__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./DropdownMenu */ "./node_modules/react-bootstrap/esm/DropdownMenu.js");
+/* harmony import */ var _DropdownToggle__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./DropdownToggle */ "./node_modules/react-bootstrap/esm/DropdownToggle.js");
+/* harmony import */ var _SelectableContext__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./SelectableContext */ "./node_modules/react-bootstrap/esm/SelectableContext.js");
+/* harmony import */ var _ThemeProvider__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./ThemeProvider */ "./node_modules/react-bootstrap/esm/ThemeProvider.js");
+/* harmony import */ var _createWithBsPrefix__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./createWithBsPrefix */ "./node_modules/react-bootstrap/esm/createWithBsPrefix.js");
+
+
+var _excluded = ["bsPrefix", "drop", "show", "className", "alignRight", "onSelect", "onToggle", "focusFirstItemOnShow", "as", "navbar"];
+
+
+
+
+
+
+
+
+
+
+
+var DropdownHeader = (0,_createWithBsPrefix__WEBPACK_IMPORTED_MODULE_6__["default"])('dropdown-header', {
+  defaultProps: {
+    role: 'heading'
+  }
+});
+var DropdownDivider = (0,_createWithBsPrefix__WEBPACK_IMPORTED_MODULE_6__["default"])('dropdown-divider', {
+  defaultProps: {
+    role: 'separator'
+  }
+});
+var DropdownItemText = (0,_createWithBsPrefix__WEBPACK_IMPORTED_MODULE_6__["default"])('dropdown-item-text', {
+  Component: 'span'
+});
+var defaultProps = {
+  navbar: false
+};
+var Dropdown = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.forwardRef(function (pProps, ref) {
+  var _useUncontrolled = (0,uncontrollable__WEBPACK_IMPORTED_MODULE_4__.useUncontrolled)(pProps, {
+    show: 'onToggle'
+  }),
+      bsPrefix = _useUncontrolled.bsPrefix,
+      drop = _useUncontrolled.drop,
+      show = _useUncontrolled.show,
+      className = _useUncontrolled.className,
+      alignRight = _useUncontrolled.alignRight,
+      onSelect = _useUncontrolled.onSelect,
+      onToggle = _useUncontrolled.onToggle,
+      focusFirstItemOnShow = _useUncontrolled.focusFirstItemOnShow,
+      _useUncontrolled$as = _useUncontrolled.as,
+      Component = _useUncontrolled$as === void 0 ? 'div' : _useUncontrolled$as,
+      _4 = _useUncontrolled.navbar,
+      props = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_useUncontrolled, _excluded);
+
+  var onSelectCtx = (0,react__WEBPACK_IMPORTED_MODULE_3__.useContext)(_SelectableContext__WEBPACK_IMPORTED_MODULE_7__["default"]);
+  var prefix = (0,_ThemeProvider__WEBPACK_IMPORTED_MODULE_8__.useBootstrapPrefix)(bsPrefix, 'dropdown');
+  var handleToggle = (0,_restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_5__["default"])(function (nextShow, event, source) {
+    if (source === void 0) {
+      source = event.type;
+    }
+
+    if (event.currentTarget === document && (source !== 'keydown' || event.key === 'Escape')) source = 'rootClose';
+
+    if (onToggle) {
+      onToggle(nextShow, event, {
+        source: source
+      });
+    }
+  });
+  var handleSelect = (0,_restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_5__["default"])(function (key, event) {
+    if (onSelectCtx) onSelectCtx(key, event);
+    if (onSelect) onSelect(key, event);
+    handleToggle(false, event, 'select');
+  });
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(_SelectableContext__WEBPACK_IMPORTED_MODULE_7__["default"].Provider, {
+    value: handleSelect
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(react_overlays_Dropdown__WEBPACK_IMPORTED_MODULE_9__["default"], {
+    drop: drop,
+    show: show,
+    alignEnd: alignRight,
+    onToggle: handleToggle,
+    focusFirstItemOnShow: focusFirstItemOnShow,
+    itemSelector: "." + prefix + "-item:not(.disabled):not(:disabled)"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(Component, (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, props, {
+    ref: ref,
+    className: classnames__WEBPACK_IMPORTED_MODULE_2___default()(className, show && 'show', (!drop || drop === 'down') && prefix, drop === 'up' && 'dropup', drop === 'right' && 'dropright', drop === 'left' && 'dropleft')
+  }))));
+});
+Dropdown.displayName = 'Dropdown';
+Dropdown.defaultProps = defaultProps;
+Dropdown.Divider = DropdownDivider;
+Dropdown.Header = DropdownHeader;
+Dropdown.Item = _DropdownItem__WEBPACK_IMPORTED_MODULE_10__["default"];
+Dropdown.ItemText = DropdownItemText;
+Dropdown.Menu = _DropdownMenu__WEBPACK_IMPORTED_MODULE_11__["default"];
+Dropdown.Toggle = _DropdownToggle__WEBPACK_IMPORTED_MODULE_12__["default"];
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dropdown);
+
+/***/ }),
+
+/***/ "./node_modules/react-bootstrap/esm/DropdownItem.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/DropdownItem.js ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @restart/hooks/useEventCallback */ "./node_modules/@restart/hooks/esm/useEventCallback.js");
+/* harmony import */ var _SelectableContext__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./SelectableContext */ "./node_modules/react-bootstrap/esm/SelectableContext.js");
+/* harmony import */ var _ThemeProvider__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./ThemeProvider */ "./node_modules/react-bootstrap/esm/ThemeProvider.js");
+/* harmony import */ var _NavContext__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./NavContext */ "./node_modules/react-bootstrap/esm/NavContext.js");
+/* harmony import */ var _SafeAnchor__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./SafeAnchor */ "./node_modules/react-bootstrap/esm/SafeAnchor.js");
+
+
+var _excluded = ["bsPrefix", "className", "children", "eventKey", "disabled", "href", "onClick", "onSelect", "active", "as"];
+
+
+
+
+
+
+
+var defaultProps = {
+  as: _SafeAnchor__WEBPACK_IMPORTED_MODULE_5__["default"],
+  disabled: false
+};
+var DropdownItem = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.forwardRef(function (_ref, ref) {
+  var bsPrefix = _ref.bsPrefix,
+      className = _ref.className,
+      children = _ref.children,
+      eventKey = _ref.eventKey,
+      disabled = _ref.disabled,
+      href = _ref.href,
+      onClick = _ref.onClick,
+      onSelect = _ref.onSelect,
+      propActive = _ref.active,
+      Component = _ref.as,
+      props = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_ref, _excluded);
+
+  var prefix = (0,_ThemeProvider__WEBPACK_IMPORTED_MODULE_6__.useBootstrapPrefix)(bsPrefix, 'dropdown-item');
+  var onSelectCtx = (0,react__WEBPACK_IMPORTED_MODULE_3__.useContext)(_SelectableContext__WEBPACK_IMPORTED_MODULE_7__["default"]);
+  var navContext = (0,react__WEBPACK_IMPORTED_MODULE_3__.useContext)(_NavContext__WEBPACK_IMPORTED_MODULE_8__["default"]);
+
+  var _ref2 = navContext || {},
+      activeKey = _ref2.activeKey;
+
+  var key = (0,_SelectableContext__WEBPACK_IMPORTED_MODULE_7__.makeEventKey)(eventKey, href);
+  var active = propActive == null && key != null ? (0,_SelectableContext__WEBPACK_IMPORTED_MODULE_7__.makeEventKey)(activeKey) === key : propActive;
+  var handleClick = (0,_restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_4__["default"])(function (event) {
+    // SafeAnchor handles the disabled case, but we handle it here
+    // for other components
+    if (disabled) return;
+    if (onClick) onClick(event);
+    if (onSelectCtx) onSelectCtx(key, event);
+    if (onSelect) onSelect(key, event);
+  });
+  return (
+    /*#__PURE__*/
+    // "TS2604: JSX element type 'Component' does not have any construct or call signatures."
+    // @ts-ignore
+    react__WEBPACK_IMPORTED_MODULE_3__.createElement(Component, (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, props, {
+      ref: ref,
+      href: href,
+      disabled: disabled,
+      className: classnames__WEBPACK_IMPORTED_MODULE_2___default()(className, prefix, active && 'active', disabled && 'disabled'),
+      onClick: handleClick
+    }), children)
+  );
+});
+DropdownItem.displayName = 'DropdownItem';
+DropdownItem.defaultProps = defaultProps;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DropdownItem);
+
+/***/ }),
+
+/***/ "./node_modules/react-bootstrap/esm/DropdownMenu.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/DropdownMenu.js ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "alignPropType": () => (/* binding */ alignPropType),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_6__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_overlays_DropdownMenu__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! react-overlays/DropdownMenu */ "./node_modules/react-overlays/esm/DropdownMenu.js");
+/* harmony import */ var _restart_hooks_useMergedRefs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @restart/hooks/useMergedRefs */ "./node_modules/@restart/hooks/esm/useMergedRefs.js");
+/* harmony import */ var warning__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! warning */ "./node_modules/warning/warning.js");
+/* harmony import */ var warning__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(warning__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _NavbarContext__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./NavbarContext */ "./node_modules/react-bootstrap/esm/NavbarContext.js");
+/* harmony import */ var _ThemeProvider__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./ThemeProvider */ "./node_modules/react-bootstrap/esm/ThemeProvider.js");
+/* harmony import */ var _useWrappedRefWithWarning__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./useWrappedRefWithWarning */ "./node_modules/react-bootstrap/esm/useWrappedRefWithWarning.js");
+/* harmony import */ var _usePopperMarginModifiers__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./usePopperMarginModifiers */ "./node_modules/react-bootstrap/esm/usePopperMarginModifiers.js");
+
+
+var _excluded = ["bsPrefix", "className", "align", "alignRight", "rootCloseEvent", "flip", "show", "renderOnMount", "as", "popperConfig"];
+
+
+
+
+
+
+
+
+
+
+var alignDirection = prop_types__WEBPACK_IMPORTED_MODULE_6___default().oneOf(['left', 'right']);
+var alignPropType = prop_types__WEBPACK_IMPORTED_MODULE_6___default().oneOfType([alignDirection, prop_types__WEBPACK_IMPORTED_MODULE_6___default().shape({
+  sm: alignDirection
+}), prop_types__WEBPACK_IMPORTED_MODULE_6___default().shape({
+  md: alignDirection
+}), prop_types__WEBPACK_IMPORTED_MODULE_6___default().shape({
+  lg: alignDirection
+}), prop_types__WEBPACK_IMPORTED_MODULE_6___default().shape({
+  xl: alignDirection
+})]);
+var defaultProps = {
+  align: 'left',
+  alignRight: false,
+  flip: true
+};
+var DropdownMenu = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.forwardRef(function (_ref, ref) {
+  var bsPrefix = _ref.bsPrefix,
+      className = _ref.className,
+      align = _ref.align,
+      alignRight = _ref.alignRight,
+      rootCloseEvent = _ref.rootCloseEvent,
+      flip = _ref.flip,
+      showProps = _ref.show,
+      renderOnMount = _ref.renderOnMount,
+      _ref$as = _ref.as,
+      Component = _ref$as === void 0 ? 'div' : _ref$as,
+      popperConfig = _ref.popperConfig,
+      props = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_ref, _excluded);
+
+  var isNavbar = (0,react__WEBPACK_IMPORTED_MODULE_3__.useContext)(_NavbarContext__WEBPACK_IMPORTED_MODULE_7__["default"]);
+  var prefix = (0,_ThemeProvider__WEBPACK_IMPORTED_MODULE_8__.useBootstrapPrefix)(bsPrefix, 'dropdown-menu');
+
+  var _usePopperMarginModif = (0,_usePopperMarginModifiers__WEBPACK_IMPORTED_MODULE_9__["default"])(),
+      popperRef = _usePopperMarginModif[0],
+      marginModifiers = _usePopperMarginModif[1];
+
+  var alignClasses = [];
+
+  if (align) {
+    if (typeof align === 'object') {
+      var keys = Object.keys(align);
+       true ? warning__WEBPACK_IMPORTED_MODULE_5___default()(keys.length === 1, 'There should only be 1 breakpoint when passing an object to `align`') : 0;
+
+      if (keys.length) {
+        var brkPoint = keys[0];
+        var direction = align[brkPoint]; // .dropdown-menu-right is required for responsively aligning
+        // left in addition to align left classes.
+        // Reuse alignRight to toggle the class below.
+
+        alignRight = direction === 'left';
+        alignClasses.push(prefix + "-" + brkPoint + "-" + direction);
+      }
+    } else if (align === 'right') {
+      alignRight = true;
+    }
+  }
+
+  var _useDropdownMenu = (0,react_overlays_DropdownMenu__WEBPACK_IMPORTED_MODULE_10__.useDropdownMenu)({
+    flip: flip,
+    rootCloseEvent: rootCloseEvent,
+    show: showProps,
+    alignEnd: alignRight,
+    usePopper: !isNavbar && alignClasses.length === 0,
+    popperConfig: (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, popperConfig, {
+      modifiers: marginModifiers.concat((popperConfig == null ? void 0 : popperConfig.modifiers) || [])
+    })
+  }),
+      menuProps = _useDropdownMenu[0],
+      _useDropdownMenu$ = _useDropdownMenu[1],
+      hasShown = _useDropdownMenu$.hasShown,
+      popper = _useDropdownMenu$.popper,
+      show = _useDropdownMenu$.show,
+      alignEnd = _useDropdownMenu$.alignEnd,
+      toggle = _useDropdownMenu$.toggle;
+
+  menuProps.ref = (0,_restart_hooks_useMergedRefs__WEBPACK_IMPORTED_MODULE_4__["default"])(popperRef, (0,_restart_hooks_useMergedRefs__WEBPACK_IMPORTED_MODULE_4__["default"])((0,_useWrappedRefWithWarning__WEBPACK_IMPORTED_MODULE_11__["default"])(ref, 'DropdownMenu'), menuProps.ref));
+  if (!hasShown && !renderOnMount) return null; // For custom components provide additional, non-DOM, props;
+
+  if (typeof Component !== 'string') {
+    menuProps.show = show;
+
+    menuProps.close = function () {
+      return toggle == null ? void 0 : toggle(false);
+    };
+
+    menuProps.alignRight = alignEnd;
+  }
+
+  var style = props.style;
+
+  if (popper != null && popper.placement) {
+    // we don't need the default popper style,
+    // menus are display: none when not shown.
+    style = (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, props.style, menuProps.style);
+    props['x-placement'] = popper.placement;
+  }
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(Component, (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, props, menuProps, {
+    style: style,
+    className: classnames__WEBPACK_IMPORTED_MODULE_2___default().apply(void 0, [className, prefix, show && 'show', alignEnd && prefix + "-right"].concat(alignClasses))
+  }));
+});
+DropdownMenu.displayName = 'DropdownMenu';
+DropdownMenu.defaultProps = defaultProps;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DropdownMenu);
+
+/***/ }),
+
+/***/ "./node_modules/react-bootstrap/esm/DropdownToggle.js":
+/*!************************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/DropdownToggle.js ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var prop_types_extra_lib_isRequiredForA11y__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! prop-types-extra/lib/isRequiredForA11y */ "./node_modules/prop-types-extra/lib/isRequiredForA11y.js");
+/* harmony import */ var prop_types_extra_lib_isRequiredForA11y__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(prop_types_extra_lib_isRequiredForA11y__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_overlays_DropdownToggle__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! react-overlays/DropdownToggle */ "./node_modules/react-overlays/esm/DropdownToggle.js");
+/* harmony import */ var _restart_hooks_useMergedRefs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @restart/hooks/useMergedRefs */ "./node_modules/@restart/hooks/esm/useMergedRefs.js");
+/* harmony import */ var _Button__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./Button */ "./node_modules/react-bootstrap/esm/Button.js");
+/* harmony import */ var _ThemeProvider__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./ThemeProvider */ "./node_modules/react-bootstrap/esm/ThemeProvider.js");
+/* harmony import */ var _useWrappedRefWithWarning__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./useWrappedRefWithWarning */ "./node_modules/react-bootstrap/esm/useWrappedRefWithWarning.js");
+
+
+var _excluded = ["bsPrefix", "split", "className", "childBsPrefix", "as"];
+
+
+
+
+
+
+
+
+var DropdownToggle = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_4__.forwardRef(function (_ref, ref) {
+  var bsPrefix = _ref.bsPrefix,
+      split = _ref.split,
+      className = _ref.className,
+      childBsPrefix = _ref.childBsPrefix,
+      _ref$as = _ref.as,
+      Component = _ref$as === void 0 ? _Button__WEBPACK_IMPORTED_MODULE_6__["default"] : _ref$as,
+      props = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_ref, _excluded);
+
+  var prefix = (0,_ThemeProvider__WEBPACK_IMPORTED_MODULE_7__.useBootstrapPrefix)(bsPrefix, 'dropdown-toggle');
+
+  if (childBsPrefix !== undefined) {
+    props.bsPrefix = childBsPrefix;
+  }
+
+  var _useDropdownToggle = (0,react_overlays_DropdownToggle__WEBPACK_IMPORTED_MODULE_8__.useDropdownToggle)(),
+      toggleProps = _useDropdownToggle[0];
+
+  toggleProps.ref = (0,_restart_hooks_useMergedRefs__WEBPACK_IMPORTED_MODULE_5__["default"])(toggleProps.ref, (0,_useWrappedRefWithWarning__WEBPACK_IMPORTED_MODULE_9__["default"])(ref, 'DropdownToggle')); // This intentionally forwards size and variant (if set) to the
+  // underlying component, to allow it to render size and style variants.
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_4__.createElement(Component, (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({
+    className: classnames__WEBPACK_IMPORTED_MODULE_2___default()(className, prefix, split && prefix + "-split")
+  }, toggleProps, props));
+});
+DropdownToggle.displayName = 'DropdownToggle';
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DropdownToggle);
+
+/***/ }),
+
 /***/ "./node_modules/react-bootstrap/esm/ElementChildren.js":
 /*!*************************************************************!*\
   !*** ./node_modules/react-bootstrap/esm/ElementChildren.js ***!
@@ -5530,6 +13494,156 @@ NavbarToggle.defaultProps = defaultProps;
 
 /***/ }),
 
+/***/ "./node_modules/react-bootstrap/esm/PageItem.js":
+/*!******************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/PageItem.js ***!
+  \******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Ellipsis": () => (/* binding */ Ellipsis),
+/* harmony export */   "First": () => (/* binding */ First),
+/* harmony export */   "Last": () => (/* binding */ Last),
+/* harmony export */   "Next": () => (/* binding */ Next),
+/* harmony export */   "Prev": () => (/* binding */ Prev),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _SafeAnchor__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./SafeAnchor */ "./node_modules/react-bootstrap/esm/SafeAnchor.js");
+
+
+var _excluded = ["active", "disabled", "className", "style", "activeLabel", "children"],
+    _excluded2 = ["children"];
+
+/* eslint-disable react/no-multi-comp */
+
+
+
+var defaultProps = {
+  active: false,
+  disabled: false,
+  activeLabel: '(current)'
+};
+var PageItem = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.forwardRef(function (_ref, ref) {
+  var active = _ref.active,
+      disabled = _ref.disabled,
+      className = _ref.className,
+      style = _ref.style,
+      activeLabel = _ref.activeLabel,
+      children = _ref.children,
+      props = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_ref, _excluded);
+
+  var Component = active || disabled ? 'span' : _SafeAnchor__WEBPACK_IMPORTED_MODULE_4__["default"];
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("li", {
+    ref: ref,
+    style: style,
+    className: classnames__WEBPACK_IMPORTED_MODULE_2___default()(className, 'page-item', {
+      active: active,
+      disabled: disabled
+    })
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(Component, (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({
+    className: "page-link",
+    disabled: disabled
+  }, props), children, active && activeLabel && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("span", {
+    className: "sr-only"
+  }, activeLabel)));
+});
+PageItem.defaultProps = defaultProps;
+PageItem.displayName = 'PageItem';
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (PageItem);
+
+function createButton(name, defaultValue, label) {
+  if (label === void 0) {
+    label = name;
+  }
+
+  function Button(_ref2) {
+    var children = _ref2.children,
+        props = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_ref2, _excluded2);
+
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(PageItem, props, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("span", {
+      "aria-hidden": "true"
+    }, children || defaultValue), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("span", {
+      className: "sr-only"
+    }, label));
+  }
+
+  Button.displayName = name;
+  return Button;
+}
+
+var First = createButton('First', '«');
+var Prev = createButton('Prev', '‹', 'Previous');
+var Ellipsis = createButton('Ellipsis', '…', 'More');
+var Next = createButton('Next', '›');
+var Last = createButton('Last', '»');
+
+/***/ }),
+
+/***/ "./node_modules/react-bootstrap/esm/Pagination.js":
+/*!********************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/Pagination.js ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _ThemeProvider__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./ThemeProvider */ "./node_modules/react-bootstrap/esm/ThemeProvider.js");
+/* harmony import */ var _PageItem__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./PageItem */ "./node_modules/react-bootstrap/esm/PageItem.js");
+
+
+var _excluded = ["bsPrefix", "className", "children", "size"];
+
+
+
+
+
+/**
+ * @property {PageItem} Item
+ * @property {PageItem} First
+ * @property {PageItem} Prev
+ * @property {PageItem} Ellipsis
+ * @property {PageItem} Next
+ * @property {PageItem} Last
+ */
+var Pagination = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.forwardRef(function (_ref, ref) {
+  var bsPrefix = _ref.bsPrefix,
+      className = _ref.className,
+      children = _ref.children,
+      size = _ref.size,
+      props = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_ref, _excluded);
+
+  var decoratedBsPrefix = (0,_ThemeProvider__WEBPACK_IMPORTED_MODULE_4__.useBootstrapPrefix)(bsPrefix, 'pagination');
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement("ul", (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({
+    ref: ref
+  }, props, {
+    className: classnames__WEBPACK_IMPORTED_MODULE_2___default()(className, decoratedBsPrefix, size && decoratedBsPrefix + "-" + size)
+  }), children);
+});
+Pagination.First = _PageItem__WEBPACK_IMPORTED_MODULE_5__.First;
+Pagination.Prev = _PageItem__WEBPACK_IMPORTED_MODULE_5__.Prev;
+Pagination.Ellipsis = _PageItem__WEBPACK_IMPORTED_MODULE_5__.Ellipsis;
+Pagination.Item = _PageItem__WEBPACK_IMPORTED_MODULE_5__["default"];
+Pagination.Next = _PageItem__WEBPACK_IMPORTED_MODULE_5__.Next;
+Pagination.Last = _PageItem__WEBPACK_IMPORTED_MODULE_5__.Last;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Pagination);
+
+/***/ }),
+
 /***/ "./node_modules/react-bootstrap/esm/Row.js":
 /*!*************************************************!*\
   !*** ./node_modules/react-bootstrap/esm/Row.js ***!
@@ -5983,6 +14097,185 @@ __webpack_require__.r(__webpack_exports__);
 function triggerBrowserReflow(node) {
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   node.offsetHeight;
+}
+
+/***/ }),
+
+/***/ "./node_modules/react-bootstrap/esm/usePopperMarginModifiers.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/usePopperMarginModifiers.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ usePopperMarginModifiers)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var dom_helpers_hasClass__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! dom-helpers/hasClass */ "./node_modules/dom-helpers/esm/hasClass.js");
+/* harmony import */ var _ThemeProvider__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ThemeProvider */ "./node_modules/react-bootstrap/esm/ThemeProvider.js");
+
+
+
+
+function getMargins(element) {
+  var styles = window.getComputedStyle(element);
+  var top = parseFloat(styles.marginTop) || 0;
+  var right = parseFloat(styles.marginRight) || 0;
+  var bottom = parseFloat(styles.marginBottom) || 0;
+  var left = parseFloat(styles.marginLeft) || 0;
+  return {
+    top: top,
+    right: right,
+    bottom: bottom,
+    left: left
+  };
+}
+
+function usePopperMarginModifiers() {
+  var overlayRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var margins = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var arrowMargins = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var popoverClass = (0,_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__.useBootstrapPrefix)(undefined, 'popover');
+  var dropdownMenuClass = (0,_ThemeProvider__WEBPACK_IMPORTED_MODULE_2__.useBootstrapPrefix)(undefined, 'dropdown-menu');
+  var callback = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (overlay) {
+    if (!overlay || !((0,dom_helpers_hasClass__WEBPACK_IMPORTED_MODULE_1__["default"])(overlay, popoverClass) || (0,dom_helpers_hasClass__WEBPACK_IMPORTED_MODULE_1__["default"])(overlay, dropdownMenuClass))) return;
+    margins.current = getMargins(overlay);
+    overlay.style.margin = '0';
+    overlayRef.current = overlay;
+  }, [popoverClass, dropdownMenuClass]);
+  var offset = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    return {
+      name: 'offset',
+      options: {
+        offset: function offset(_ref) {
+          var placement = _ref.placement;
+          if (!margins.current) return [0, 0];
+          var _margins$current = margins.current,
+              top = _margins$current.top,
+              left = _margins$current.left,
+              bottom = _margins$current.bottom,
+              right = _margins$current.right;
+
+          switch (placement.split('-')[0]) {
+            case 'top':
+              return [0, bottom];
+
+            case 'left':
+              return [0, right];
+
+            case 'bottom':
+              return [0, top];
+
+            case 'right':
+              return [0, left];
+
+            default:
+              return [0, 0];
+          }
+        }
+      }
+    };
+  }, [margins]);
+  var arrow = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    return {
+      name: 'arrow',
+      options: {
+        padding: function padding() {
+          // The options here are used for Popper 2.8.4 and up.
+          // For earlier version, padding is handled in popoverArrowMargins below.
+          if (!arrowMargins.current) {
+            return 0;
+          }
+
+          var _arrowMargins$current = arrowMargins.current,
+              top = _arrowMargins$current.top,
+              right = _arrowMargins$current.right;
+          var padding = top || right;
+          return {
+            top: padding,
+            left: padding,
+            right: padding,
+            bottom: padding
+          };
+        }
+      }
+    };
+  }, [arrowMargins]); // Converts popover arrow margin to arrow modifier padding
+
+  var popoverArrowMargins = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    return {
+      name: 'popoverArrowMargins',
+      enabled: true,
+      phase: 'main',
+      requiresIfExists: ['arrow'],
+      effect: function effect(_ref2) {
+        var state = _ref2.state;
+
+        if (!overlayRef.current || !state.elements.arrow || !(0,dom_helpers_hasClass__WEBPACK_IMPORTED_MODULE_1__["default"])(overlayRef.current, popoverClass)) {
+          return undefined;
+        }
+
+        if (state.modifiersData['arrow#persistent']) {
+          // @popperjs/core <= 2.8.3 uses arrow#persistent to pass padding to arrow modifier.
+          var _getMargins = getMargins(state.elements.arrow),
+              top = _getMargins.top,
+              right = _getMargins.right;
+
+          var padding = top || right;
+          state.modifiersData['arrow#persistent'].padding = {
+            top: padding,
+            left: padding,
+            right: padding,
+            bottom: padding
+          };
+        } else {
+          // @popperjs/core >= 2.8.4 gets the padding from the arrow modifier options,
+          // so we'll get the margins here, and let the arrow modifier above pass
+          // it to popper.
+          arrowMargins.current = getMargins(state.elements.arrow);
+        }
+
+        state.elements.arrow.style.margin = '0';
+        return function () {
+          if (state.elements.arrow) state.elements.arrow.style.margin = '';
+        };
+      }
+    };
+  }, [popoverClass]);
+  return [callback, [offset, arrow, popoverArrowMargins]];
+}
+
+/***/ }),
+
+/***/ "./node_modules/react-bootstrap/esm/useWrappedRefWithWarning.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/react-bootstrap/esm/useWrappedRefWithWarning.js ***!
+  \**********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ useWrappedRefWithWarning)
+/* harmony export */ });
+/* harmony import */ var invariant__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! invariant */ "./node_modules/invariant/browser.js");
+/* harmony import */ var invariant__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(invariant__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _restart_hooks_useMergedRefs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @restart/hooks/useMergedRefs */ "./node_modules/@restart/hooks/esm/useMergedRefs.js");
+
+
+
+function useWrappedRefWithWarning(ref, componentName) {
+  // @ts-ignore
+  if (false) {} // eslint-disable-next-line react-hooks/rules-of-hooks
+
+  var warningRef = (0,react__WEBPACK_IMPORTED_MODULE_1__.useCallback)(function (refValue) {
+    !(refValue == null || !refValue.isReactComponent) ?  true ? invariant__WEBPACK_IMPORTED_MODULE_0___default()(false, componentName + " injected a ref to a provided `as` component that resolved to a component instance instead of a DOM element. " + 'Use `React.forwardRef` to provide the injected ref to the class component as a prop in order to pass it directly to a DOM element') : 0 : void 0;
+  }, [componentName]); // eslint-disable-next-line react-hooks/rules-of-hooks
+
+  return (0,_restart_hooks_useMergedRefs__WEBPACK_IMPORTED_MODULE_2__["default"])(warningRef, ref);
 }
 
 /***/ }),
@@ -32680,6 +40973,1119 @@ function polyfill(Component) {
 
 /***/ }),
 
+/***/ "./node_modules/react-overlays/esm/Dropdown.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/react-overlays/esm/Dropdown.js ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var dom_helpers_matches__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! dom-helpers/matches */ "./node_modules/dom-helpers/esm/matches.js");
+/* harmony import */ var dom_helpers_querySelectorAll__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! dom-helpers/querySelectorAll */ "./node_modules/dom-helpers/esm/querySelectorAll.js");
+/* harmony import */ var dom_helpers_addEventListener__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! dom-helpers/addEventListener */ "./node_modules/dom-helpers/esm/addEventListener.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_9__);
+/* harmony import */ var uncontrollable__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! uncontrollable */ "./node_modules/uncontrollable/lib/esm/index.js");
+/* harmony import */ var _restart_hooks_usePrevious__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @restart/hooks/usePrevious */ "./node_modules/@restart/hooks/esm/usePrevious.js");
+/* harmony import */ var _restart_hooks_useForceUpdate__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @restart/hooks/useForceUpdate */ "./node_modules/@restart/hooks/esm/useForceUpdate.js");
+/* harmony import */ var _restart_hooks_useGlobalListener__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @restart/hooks/useGlobalListener */ "./node_modules/@restart/hooks/esm/useGlobalListener.js");
+/* harmony import */ var _restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @restart/hooks/useEventCallback */ "./node_modules/@restart/hooks/esm/useEventCallback.js");
+/* harmony import */ var _DropdownContext__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./DropdownContext */ "./node_modules/react-overlays/esm/DropdownContext.js");
+/* harmony import */ var _DropdownMenu__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./DropdownMenu */ "./node_modules/react-overlays/esm/DropdownMenu.js");
+/* harmony import */ var _DropdownToggle__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./DropdownToggle */ "./node_modules/react-overlays/esm/DropdownToggle.js");
+
+
+
+
+
+
+
+
+
+
+
+
+
+var propTypes = {
+  /**
+   * A render prop that returns the root dropdown element. The `props`
+   * argument should spread through to an element containing _both_ the
+   * menu and toggle in order to handle keyboard events for focus management.
+   *
+   * @type {Function ({
+   *   props: {
+   *     onKeyDown: (SyntheticEvent) => void,
+   *   },
+   * }) => React.Element}
+   */
+  children: (prop_types__WEBPACK_IMPORTED_MODULE_9___default().node),
+
+  /**
+   * Determines the direction and location of the Menu in relation to it's Toggle.
+   */
+  drop: prop_types__WEBPACK_IMPORTED_MODULE_9___default().oneOf(['up', 'left', 'right', 'down']),
+
+  /**
+   * Controls the focus behavior for when the Dropdown is opened. Set to
+   * `true` to always focus the first menu item, `keyboard` to focus only when
+   * navigating via the keyboard, or `false` to disable completely
+   *
+   * The Default behavior is `false` **unless** the Menu has a `role="menu"`
+   * where it will default to `keyboard` to match the recommended [ARIA Authoring practices](https://www.w3.org/TR/wai-aria-practices-1.1/#menubutton).
+   */
+  focusFirstItemOnShow: prop_types__WEBPACK_IMPORTED_MODULE_9___default().oneOf([false, true, 'keyboard']),
+
+  /**
+   * A css slector string that will return __focusable__ menu items.
+   * Selectors should be relative to the menu component:
+   * e.g. ` > li:not('.disabled')`
+   */
+  itemSelector: (prop_types__WEBPACK_IMPORTED_MODULE_9___default().string),
+
+  /**
+   * Align the menu to the 'end' side of the placement side of the Dropdown toggle. The default placement is `top-start` or `bottom-start`.
+   */
+  alignEnd: (prop_types__WEBPACK_IMPORTED_MODULE_9___default().bool),
+
+  /**
+   * Whether or not the Dropdown is visible.
+   *
+   * @controllable onToggle
+   */
+  show: (prop_types__WEBPACK_IMPORTED_MODULE_9___default().bool),
+
+  /**
+   * Sets the initial show position of the Dropdown.
+   */
+  defaultShow: (prop_types__WEBPACK_IMPORTED_MODULE_9___default().bool),
+
+  /**
+   * A callback fired when the Dropdown wishes to change visibility. Called with the requested
+   * `show` value, the DOM event, and the source that fired it: `'click'`,`'keydown'`,`'rootClose'`, or `'select'`.
+   *
+   * ```ts static
+   * function(
+   *   isOpen: boolean,
+   *   event: SyntheticEvent,
+   * ): void
+   * ```
+   *
+   * @controllable show
+   */
+  onToggle: (prop_types__WEBPACK_IMPORTED_MODULE_9___default().func)
+};
+
+function useRefWithUpdate() {
+  var forceUpdate = (0,_restart_hooks_useForceUpdate__WEBPACK_IMPORTED_MODULE_6__["default"])();
+  var ref = (0,react__WEBPACK_IMPORTED_MODULE_3__.useRef)(null);
+  var attachRef = (0,react__WEBPACK_IMPORTED_MODULE_3__.useCallback)(function (element) {
+    ref.current = element; // ensure that a menu set triggers an update for consumers
+
+    forceUpdate();
+  }, [forceUpdate]);
+  return [ref, attachRef];
+}
+/**
+ * @displayName Dropdown
+ * @public
+ */
+
+
+function Dropdown(_ref) {
+  var drop = _ref.drop,
+      alignEnd = _ref.alignEnd,
+      defaultShow = _ref.defaultShow,
+      rawShow = _ref.show,
+      rawOnToggle = _ref.onToggle,
+      _ref$itemSelector = _ref.itemSelector,
+      itemSelector = _ref$itemSelector === void 0 ? '* > *' : _ref$itemSelector,
+      focusFirstItemOnShow = _ref.focusFirstItemOnShow,
+      children = _ref.children;
+
+  var _useUncontrolledProp = (0,uncontrollable__WEBPACK_IMPORTED_MODULE_4__.useUncontrolledProp)(rawShow, defaultShow, rawOnToggle),
+      show = _useUncontrolledProp[0],
+      onToggle = _useUncontrolledProp[1]; // We use normal refs instead of useCallbackRef in order to populate the
+  // the value as quickly as possible, otherwise the effect to focus the element
+  // may run before the state value is set
+
+
+  var _useRefWithUpdate = useRefWithUpdate(),
+      menuRef = _useRefWithUpdate[0],
+      setMenu = _useRefWithUpdate[1];
+
+  var menuElement = menuRef.current;
+
+  var _useRefWithUpdate2 = useRefWithUpdate(),
+      toggleRef = _useRefWithUpdate2[0],
+      setToggle = _useRefWithUpdate2[1];
+
+  var toggleElement = toggleRef.current;
+  var lastShow = (0,_restart_hooks_usePrevious__WEBPACK_IMPORTED_MODULE_5__["default"])(show);
+  var lastSourceEvent = (0,react__WEBPACK_IMPORTED_MODULE_3__.useRef)(null);
+  var focusInDropdown = (0,react__WEBPACK_IMPORTED_MODULE_3__.useRef)(false);
+  var toggle = (0,react__WEBPACK_IMPORTED_MODULE_3__.useCallback)(function (nextShow, event) {
+    onToggle(nextShow, event);
+  }, [onToggle]);
+  var context = (0,react__WEBPACK_IMPORTED_MODULE_3__.useMemo)(function () {
+    return {
+      toggle: toggle,
+      drop: drop,
+      show: show,
+      alignEnd: alignEnd,
+      menuElement: menuElement,
+      toggleElement: toggleElement,
+      setMenu: setMenu,
+      setToggle: setToggle
+    };
+  }, [toggle, drop, show, alignEnd, menuElement, toggleElement, setMenu, setToggle]);
+
+  if (menuElement && lastShow && !show) {
+    focusInDropdown.current = menuElement.contains(document.activeElement);
+  }
+
+  var focusToggle = (0,_restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_8__["default"])(function () {
+    if (toggleElement && toggleElement.focus) {
+      toggleElement.focus();
+    }
+  });
+  var maybeFocusFirst = (0,_restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_8__["default"])(function () {
+    var type = lastSourceEvent.current;
+    var focusType = focusFirstItemOnShow;
+
+    if (focusType == null) {
+      focusType = menuRef.current && (0,dom_helpers_matches__WEBPACK_IMPORTED_MODULE_0__["default"])(menuRef.current, '[role=menu]') ? 'keyboard' : false;
+    }
+
+    if (focusType === false || focusType === 'keyboard' && !/^key.+$/.test(type)) {
+      return;
+    }
+
+    var first = (0,dom_helpers_querySelectorAll__WEBPACK_IMPORTED_MODULE_1__["default"])(menuRef.current, itemSelector)[0];
+    if (first && first.focus) first.focus();
+  });
+  (0,react__WEBPACK_IMPORTED_MODULE_3__.useEffect)(function () {
+    if (show) maybeFocusFirst();else if (focusInDropdown.current) {
+      focusInDropdown.current = false;
+      focusToggle();
+    } // only `show` should be changing
+  }, [show, focusInDropdown, focusToggle, maybeFocusFirst]);
+  (0,react__WEBPACK_IMPORTED_MODULE_3__.useEffect)(function () {
+    lastSourceEvent.current = null;
+  });
+
+  var getNextFocusedChild = function getNextFocusedChild(current, offset) {
+    if (!menuRef.current) return null;
+    var items = (0,dom_helpers_querySelectorAll__WEBPACK_IMPORTED_MODULE_1__["default"])(menuRef.current, itemSelector);
+    var index = items.indexOf(current) + offset;
+    index = Math.max(0, Math.min(index, items.length));
+    return items[index];
+  };
+
+  (0,_restart_hooks_useGlobalListener__WEBPACK_IMPORTED_MODULE_7__["default"])('keydown', function (event) {
+    var _menuRef$current, _toggleRef$current;
+
+    var key = event.key;
+    var target = event.target;
+    var fromMenu = (_menuRef$current = menuRef.current) == null ? void 0 : _menuRef$current.contains(target);
+    var fromToggle = (_toggleRef$current = toggleRef.current) == null ? void 0 : _toggleRef$current.contains(target); // Second only to https://github.com/twbs/bootstrap/blob/8cfbf6933b8a0146ac3fbc369f19e520bd1ebdac/js/src/dropdown.js#L400
+    // in inscrutability
+
+    var isInput = /input|textarea/i.test(target.tagName);
+
+    if (isInput && (key === ' ' || key !== 'Escape' && fromMenu)) {
+      return;
+    }
+
+    if (!fromMenu && !fromToggle) {
+      return;
+    }
+
+    if (!menuRef.current && key === 'Tab') {
+      return;
+    }
+
+    lastSourceEvent.current = event.type;
+
+    switch (key) {
+      case 'ArrowUp':
+        {
+          var next = getNextFocusedChild(target, -1);
+          if (next && next.focus) next.focus();
+          event.preventDefault();
+          return;
+        }
+
+      case 'ArrowDown':
+        event.preventDefault();
+
+        if (!show) {
+          onToggle(true, event);
+        } else {
+          var _next = getNextFocusedChild(target, 1);
+
+          if (_next && _next.focus) _next.focus();
+        }
+
+        return;
+
+      case 'Tab':
+        // on keydown the target is the element being tabbed FROM, we need that
+        // to know if this event is relevant to this dropdown (e.g. in this menu).
+        // On `keyup` the target is the element being tagged TO which we use to check
+        // if focus has left the menu
+        (0,dom_helpers_addEventListener__WEBPACK_IMPORTED_MODULE_2__["default"])(document, 'keyup', function (e) {
+          var _menuRef$current2;
+
+          if (e.key === 'Tab' && !e.target || !((_menuRef$current2 = menuRef.current) != null && _menuRef$current2.contains(e.target))) {
+            onToggle(false, event);
+          }
+        }, {
+          once: true
+        });
+        break;
+
+      case 'Escape':
+        event.preventDefault();
+        event.stopPropagation();
+        onToggle(false, event);
+        break;
+
+      default:
+    }
+  });
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_3__.createElement(_DropdownContext__WEBPACK_IMPORTED_MODULE_10__["default"].Provider, {
+    value: context
+  }, children);
+}
+
+Dropdown.displayName = 'ReactOverlaysDropdown';
+Dropdown.propTypes = propTypes;
+Dropdown.Menu = _DropdownMenu__WEBPACK_IMPORTED_MODULE_11__["default"];
+Dropdown.Toggle = _DropdownToggle__WEBPACK_IMPORTED_MODULE_12__["default"];
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dropdown);
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/DropdownContext.js":
+/*!************************************************************!*\
+  !*** ./node_modules/react-overlays/esm/DropdownContext.js ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+
+var DropdownContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createContext(null);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DropdownContext);
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/DropdownMenu.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/react-overlays/esm/DropdownMenu.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   "useDropdownMenu": () => (/* binding */ useDropdownMenu)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _restart_hooks_useCallbackRef__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @restart/hooks/useCallbackRef */ "./node_modules/@restart/hooks/esm/useCallbackRef.js");
+/* harmony import */ var _DropdownContext__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./DropdownContext */ "./node_modules/react-overlays/esm/DropdownContext.js");
+/* harmony import */ var _usePopper__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./usePopper */ "./node_modules/react-overlays/esm/usePopper.js");
+/* harmony import */ var _useRootClose__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./useRootClose */ "./node_modules/react-overlays/esm/useRootClose.js");
+/* harmony import */ var _mergeOptionsWithPopperConfig__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./mergeOptionsWithPopperConfig */ "./node_modules/react-overlays/esm/mergeOptionsWithPopperConfig.js");
+
+
+
+
+
+
+
+
+
+
+var noop = function noop() {};
+/**
+ * @memberOf Dropdown
+ * @param {object}  options
+ * @param {boolean} options.flip Automatically adjust the menu `drop` position based on viewport edge detection
+ * @param {[number, number]} options.offset Define an offset distance between the Menu and the Toggle
+ * @param {boolean} options.show Display the menu manually, ignored in the context of a `Dropdown`
+ * @param {boolean} options.usePopper opt in/out of using PopperJS to position menus. When disabled you must position it yourself.
+ * @param {string}  options.rootCloseEvent The pointer event to listen for when determining "clicks outside" the menu for triggering a close.
+ * @param {object}  options.popperConfig Options passed to the [`usePopper`](/api/usePopper) hook.
+ */
+
+
+function useDropdownMenu(options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var context = (0,react__WEBPACK_IMPORTED_MODULE_2__.useContext)(_DropdownContext__WEBPACK_IMPORTED_MODULE_4__["default"]);
+
+  var _useCallbackRef = (0,_restart_hooks_useCallbackRef__WEBPACK_IMPORTED_MODULE_3__["default"])(),
+      arrowElement = _useCallbackRef[0],
+      attachArrowRef = _useCallbackRef[1];
+
+  var hasShownRef = (0,react__WEBPACK_IMPORTED_MODULE_2__.useRef)(false);
+  var _options = options,
+      flip = _options.flip,
+      offset = _options.offset,
+      rootCloseEvent = _options.rootCloseEvent,
+      _options$fixed = _options.fixed,
+      fixed = _options$fixed === void 0 ? false : _options$fixed,
+      _options$popperConfig = _options.popperConfig,
+      popperConfig = _options$popperConfig === void 0 ? {} : _options$popperConfig,
+      _options$usePopper = _options.usePopper,
+      shouldUsePopper = _options$usePopper === void 0 ? !!context : _options$usePopper;
+  var show = (context == null ? void 0 : context.show) == null ? !!options.show : context.show;
+  var alignEnd = (context == null ? void 0 : context.alignEnd) == null ? options.alignEnd : context.alignEnd;
+
+  if (show && !hasShownRef.current) {
+    hasShownRef.current = true;
+  }
+
+  var handleClose = function handleClose(e) {
+    context == null ? void 0 : context.toggle(false, e);
+  };
+
+  var _ref = context || {},
+      drop = _ref.drop,
+      setMenu = _ref.setMenu,
+      menuElement = _ref.menuElement,
+      toggleElement = _ref.toggleElement;
+
+  var placement = alignEnd ? 'bottom-end' : 'bottom-start';
+  if (drop === 'up') placement = alignEnd ? 'top-end' : 'top-start';else if (drop === 'right') placement = alignEnd ? 'right-end' : 'right-start';else if (drop === 'left') placement = alignEnd ? 'left-end' : 'left-start';
+  var popper = (0,_usePopper__WEBPACK_IMPORTED_MODULE_5__["default"])(toggleElement, menuElement, (0,_mergeOptionsWithPopperConfig__WEBPACK_IMPORTED_MODULE_6__["default"])({
+    placement: placement,
+    enabled: !!(shouldUsePopper && show),
+    enableEvents: show,
+    offset: offset,
+    flip: flip,
+    fixed: fixed,
+    arrowElement: arrowElement,
+    popperConfig: popperConfig
+  }));
+
+  var menuProps = (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_1__["default"])({
+    ref: setMenu || noop,
+    'aria-labelledby': toggleElement == null ? void 0 : toggleElement.id
+  }, popper.attributes.popper, {
+    style: popper.styles.popper
+  });
+
+  var metadata = {
+    show: show,
+    alignEnd: alignEnd,
+    hasShown: hasShownRef.current,
+    toggle: context == null ? void 0 : context.toggle,
+    popper: shouldUsePopper ? popper : null,
+    arrowProps: shouldUsePopper ? (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_1__["default"])({
+      ref: attachArrowRef
+    }, popper.attributes.arrow, {
+      style: popper.styles.arrow
+    }) : {}
+  };
+  (0,_useRootClose__WEBPACK_IMPORTED_MODULE_7__["default"])(menuElement, handleClose, {
+    clickTrigger: rootCloseEvent,
+    disabled: !show
+  });
+  return [menuProps, metadata];
+}
+var propTypes = {
+  /**
+   * A render prop that returns a Menu element. The `props`
+   * argument should spread through to **a component that can accept a ref**.
+   *
+   * @type {Function ({
+   *   show: boolean,
+   *   alignEnd: boolean,
+   *   close: (?SyntheticEvent) => void,
+   *   placement: Placement,
+   *   update: () => void,
+   *   forceUpdate: () => void,
+   *   props: {
+   *     ref: (?HTMLElement) => void,
+   *     style: { [string]: string | number },
+   *     aria-labelledby: ?string
+   *   },
+   *   arrowProps: {
+   *     ref: (?HTMLElement) => void,
+   *     style: { [string]: string | number },
+   *   },
+   * }) => React.Element}
+   */
+  children: (prop_types__WEBPACK_IMPORTED_MODULE_8___default().func.isRequired),
+
+  /**
+   * Controls the visible state of the menu, generally this is
+   * provided by the parent `Dropdown` component,
+   * but may also be specified as a prop directly.
+   */
+  show: (prop_types__WEBPACK_IMPORTED_MODULE_8___default().bool),
+
+  /**
+   * Aligns the dropdown menu to the 'end' of it's placement position.
+   * Generally this is provided by the parent `Dropdown` component,
+   * but may also be specified as a prop directly.
+   */
+  alignEnd: (prop_types__WEBPACK_IMPORTED_MODULE_8___default().bool),
+
+  /**
+   * Enables the Popper.js `flip` modifier, allowing the Dropdown to
+   * automatically adjust it's placement in case of overlap with the viewport or toggle.
+   * Refer to the [flip docs](https://popper.js.org/popper-documentation.html#modifiers..flip.enabled) for more info
+   */
+  flip: (prop_types__WEBPACK_IMPORTED_MODULE_8___default().bool),
+  usePopper: prop_types__WEBPACK_IMPORTED_MODULE_8___default().oneOf([true, false]),
+
+  /**
+   * A set of popper options and props passed directly to react-popper's Popper component.
+   */
+  popperConfig: (prop_types__WEBPACK_IMPORTED_MODULE_8___default().object),
+
+  /**
+   * Override the default event used by RootCloseWrapper.
+   */
+  rootCloseEvent: (prop_types__WEBPACK_IMPORTED_MODULE_8___default().string)
+};
+var defaultProps = {
+  usePopper: true
+};
+
+/**
+ * Also exported as `<Dropdown.Menu>` from `Dropdown`.
+ *
+ * @displayName DropdownMenu
+ * @memberOf Dropdown
+ */
+function DropdownMenu(_ref2) {
+  var children = _ref2.children,
+      options = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_0__["default"])(_ref2, ["children"]);
+
+  var _useDropdownMenu = useDropdownMenu(options),
+      props = _useDropdownMenu[0],
+      meta = _useDropdownMenu[1];
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2__.createElement(react__WEBPACK_IMPORTED_MODULE_2__.Fragment, null, meta.hasShown ? children(props, meta) : null);
+}
+
+DropdownMenu.displayName = 'ReactOverlaysDropdownMenu';
+DropdownMenu.propTypes = propTypes;
+DropdownMenu.defaultProps = defaultProps;
+/** @component */
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DropdownMenu);
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/DropdownToggle.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/react-overlays/esm/DropdownToggle.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   "useDropdownToggle": () => (/* binding */ useDropdownToggle)
+/* harmony export */ });
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js");
+/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _DropdownContext__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./DropdownContext */ "./node_modules/react-overlays/esm/DropdownContext.js");
+
+
+
+
+var noop = function noop() {};
+/**
+ * Wires up Dropdown toggle functionality, returning a set a props to attach
+ * to the element that functions as the dropdown toggle (generally a button).
+ *
+ * @memberOf Dropdown
+ */
+
+
+function useDropdownToggle() {
+  var _ref = (0,react__WEBPACK_IMPORTED_MODULE_0__.useContext)(_DropdownContext__WEBPACK_IMPORTED_MODULE_1__["default"]) || {},
+      _ref$show = _ref.show,
+      show = _ref$show === void 0 ? false : _ref$show,
+      _ref$toggle = _ref.toggle,
+      toggle = _ref$toggle === void 0 ? noop : _ref$toggle,
+      setToggle = _ref.setToggle;
+
+  var handleClick = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (e) {
+    toggle(!show, e);
+  }, [show, toggle]);
+  return [{
+    ref: setToggle || noop,
+    onClick: handleClick,
+    'aria-haspopup': true,
+    'aria-expanded': !!show
+  }, {
+    show: show,
+    toggle: toggle
+  }];
+}
+var propTypes = {
+  /**
+   * A render prop that returns a Toggle element. The `props`
+   * argument should spread through to **a component that can accept a ref**. Use
+   * the `onToggle` argument to toggle the menu open or closed
+   *
+   * @type {Function ({
+   *   show: boolean,
+   *   toggle: (show: boolean) => void,
+   *   props: {
+   *     ref: (?HTMLElement) => void,
+   *     aria-haspopup: true
+   *     aria-expanded: boolean
+   *   },
+   * }) => React.Element}
+   */
+  children: (prop_types__WEBPACK_IMPORTED_MODULE_2___default().func.isRequired)
+};
+
+/**
+ * Also exported as `<Dropdown.Toggle>` from `Dropdown`.
+ *
+ * @displayName DropdownToggle
+ * @memberOf Dropdown
+ */
+function DropdownToggle(_ref2) {
+  var children = _ref2.children;
+
+  var _useDropdownToggle = useDropdownToggle(),
+      props = _useDropdownToggle[0],
+      meta = _useDropdownToggle[1];
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, children(props, meta));
+}
+
+DropdownToggle.displayName = 'ReactOverlaysDropdownToggle';
+DropdownToggle.propTypes = propTypes;
+/** @component */
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DropdownToggle);
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/mergeOptionsWithPopperConfig.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/react-overlays/esm/mergeOptionsWithPopperConfig.js ***!
+  \*************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ mergeOptionsWithPopperConfig),
+/* harmony export */   "toModifierArray": () => (/* binding */ toModifierArray),
+/* harmony export */   "toModifierMap": () => (/* binding */ toModifierMap)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+
+function toModifierMap(modifiers) {
+  var result = {};
+
+  if (!Array.isArray(modifiers)) {
+    return modifiers || result;
+  } // eslint-disable-next-line no-unused-expressions
+
+
+  modifiers == null ? void 0 : modifiers.forEach(function (m) {
+    result[m.name] = m;
+  });
+  return result;
+}
+function toModifierArray(map) {
+  if (map === void 0) {
+    map = {};
+  }
+
+  if (Array.isArray(map)) return map;
+  return Object.keys(map).map(function (k) {
+    map[k].name = k;
+    return map[k];
+  });
+}
+function mergeOptionsWithPopperConfig(_ref) {
+  var _modifiers$preventOve, _modifiers$preventOve2, _modifiers$offset, _modifiers$arrow;
+
+  var enabled = _ref.enabled,
+      enableEvents = _ref.enableEvents,
+      placement = _ref.placement,
+      flip = _ref.flip,
+      offset = _ref.offset,
+      fixed = _ref.fixed,
+      containerPadding = _ref.containerPadding,
+      arrowElement = _ref.arrowElement,
+      _ref$popperConfig = _ref.popperConfig,
+      popperConfig = _ref$popperConfig === void 0 ? {} : _ref$popperConfig;
+  var modifiers = toModifierMap(popperConfig.modifiers);
+  return (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, popperConfig, {
+    placement: placement,
+    enabled: enabled,
+    strategy: fixed ? 'fixed' : popperConfig.strategy,
+    modifiers: toModifierArray((0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, modifiers, {
+      eventListeners: {
+        enabled: enableEvents
+      },
+      preventOverflow: (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, modifiers.preventOverflow, {
+        options: containerPadding ? (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({
+          padding: containerPadding
+        }, (_modifiers$preventOve = modifiers.preventOverflow) == null ? void 0 : _modifiers$preventOve.options) : (_modifiers$preventOve2 = modifiers.preventOverflow) == null ? void 0 : _modifiers$preventOve2.options
+      }),
+      offset: {
+        options: (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({
+          offset: offset
+        }, (_modifiers$offset = modifiers.offset) == null ? void 0 : _modifiers$offset.options)
+      },
+      arrow: (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, modifiers.arrow, {
+        enabled: !!arrowElement,
+        options: (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, (_modifiers$arrow = modifiers.arrow) == null ? void 0 : _modifiers$arrow.options, {
+          element: arrowElement
+        })
+      }),
+      flip: (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({
+        enabled: !!flip
+      }, modifiers.flip)
+    }))
+  });
+}
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/ownerDocument.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/react-overlays/esm/ownerDocument.js ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var dom_helpers_ownerDocument__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! dom-helpers/ownerDocument */ "./node_modules/dom-helpers/esm/ownerDocument.js");
+/* harmony import */ var _safeFindDOMNode__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./safeFindDOMNode */ "./node_modules/react-overlays/esm/safeFindDOMNode.js");
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (function (componentOrElement) {
+  return (0,dom_helpers_ownerDocument__WEBPACK_IMPORTED_MODULE_0__["default"])((0,_safeFindDOMNode__WEBPACK_IMPORTED_MODULE_1__["default"])(componentOrElement));
+});
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/popper.js":
+/*!***************************************************!*\
+  !*** ./node_modules/react-overlays/esm/popper.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "createPopper": () => (/* binding */ createPopper),
+/* harmony export */   "placements": () => (/* reexport safe */ _popperjs_core_lib_enums__WEBPACK_IMPORTED_MODULE_9__.placements)
+/* harmony export */ });
+/* harmony import */ var _popperjs_core_lib_modifiers_arrow__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/arrow */ "./node_modules/@popperjs/core/lib/modifiers/arrow.js");
+/* harmony import */ var _popperjs_core_lib_modifiers_computeStyles__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/computeStyles */ "./node_modules/@popperjs/core/lib/modifiers/computeStyles.js");
+/* harmony import */ var _popperjs_core_lib_modifiers_eventListeners__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/eventListeners */ "./node_modules/@popperjs/core/lib/modifiers/eventListeners.js");
+/* harmony import */ var _popperjs_core_lib_modifiers_flip__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/flip */ "./node_modules/@popperjs/core/lib/modifiers/flip.js");
+/* harmony import */ var _popperjs_core_lib_modifiers_hide__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/hide */ "./node_modules/@popperjs/core/lib/modifiers/hide.js");
+/* harmony import */ var _popperjs_core_lib_modifiers_offset__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/offset */ "./node_modules/@popperjs/core/lib/modifiers/offset.js");
+/* harmony import */ var _popperjs_core_lib_modifiers_popperOffsets__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/popperOffsets */ "./node_modules/@popperjs/core/lib/modifiers/popperOffsets.js");
+/* harmony import */ var _popperjs_core_lib_modifiers_preventOverflow__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @popperjs/core/lib/modifiers/preventOverflow */ "./node_modules/@popperjs/core/lib/modifiers/preventOverflow.js");
+/* harmony import */ var _popperjs_core_lib_enums__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @popperjs/core/lib/enums */ "./node_modules/@popperjs/core/lib/enums.js");
+/* harmony import */ var _popperjs_core_lib_popper_base__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @popperjs/core/lib/popper-base */ "./node_modules/@popperjs/core/lib/createPopper.js");
+
+
+
+
+
+
+
+
+
+ // For the common JS build we will turn this file into a bundle with no imports.
+// This is b/c the Popper lib is all esm files, and would break in a common js only environment
+
+var createPopper = (0,_popperjs_core_lib_popper_base__WEBPACK_IMPORTED_MODULE_0__.popperGenerator)({
+  defaultModifiers: [_popperjs_core_lib_modifiers_hide__WEBPACK_IMPORTED_MODULE_1__["default"], _popperjs_core_lib_modifiers_popperOffsets__WEBPACK_IMPORTED_MODULE_2__["default"], _popperjs_core_lib_modifiers_computeStyles__WEBPACK_IMPORTED_MODULE_3__["default"], _popperjs_core_lib_modifiers_eventListeners__WEBPACK_IMPORTED_MODULE_4__["default"], _popperjs_core_lib_modifiers_offset__WEBPACK_IMPORTED_MODULE_5__["default"], _popperjs_core_lib_modifiers_flip__WEBPACK_IMPORTED_MODULE_6__["default"], _popperjs_core_lib_modifiers_preventOverflow__WEBPACK_IMPORTED_MODULE_7__["default"], _popperjs_core_lib_modifiers_arrow__WEBPACK_IMPORTED_MODULE_8__["default"]]
+});
+
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/safeFindDOMNode.js":
+/*!************************************************************!*\
+  !*** ./node_modules/react-overlays/esm/safeFindDOMNode.js ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ safeFindDOMNode)
+/* harmony export */ });
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+
+function safeFindDOMNode(componentOrElement) {
+  if (componentOrElement && 'setState' in componentOrElement) {
+    return react_dom__WEBPACK_IMPORTED_MODULE_0__.findDOMNode(componentOrElement);
+  }
+
+  return componentOrElement != null ? componentOrElement : null;
+}
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/usePopper.js":
+/*!******************************************************!*\
+  !*** ./node_modules/react-overlays/esm/usePopper.js ***!
+  \******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/esm/extends */ "./node_modules/@babel/runtime/helpers/esm/extends.js");
+/* harmony import */ var _babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/esm/objectWithoutPropertiesLoose */ "./node_modules/@babel/runtime/helpers/esm/objectWithoutPropertiesLoose.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _restart_hooks_useSafeState__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @restart/hooks/useSafeState */ "./node_modules/@restart/hooks/esm/useSafeState.js");
+/* harmony import */ var _popper__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./popper */ "./node_modules/react-overlays/esm/popper.js");
+
+
+
+
+
+
+var initialPopperStyles = function initialPopperStyles(position) {
+  return {
+    position: position,
+    top: '0',
+    left: '0',
+    opacity: '0',
+    pointerEvents: 'none'
+  };
+};
+
+var disabledApplyStylesModifier = {
+  name: 'applyStyles',
+  enabled: false
+}; // until docjs supports type exports...
+
+var ariaDescribedByModifier = {
+  name: 'ariaDescribedBy',
+  enabled: true,
+  phase: 'afterWrite',
+  effect: function effect(_ref) {
+    var state = _ref.state;
+    return function () {
+      var _state$elements = state.elements,
+          reference = _state$elements.reference,
+          popper = _state$elements.popper;
+
+      if ('removeAttribute' in reference) {
+        var ids = (reference.getAttribute('aria-describedby') || '').split(',').filter(function (id) {
+          return id.trim() !== popper.id;
+        });
+        if (!ids.length) reference.removeAttribute('aria-describedby');else reference.setAttribute('aria-describedby', ids.join(','));
+      }
+    };
+  },
+  fn: function fn(_ref2) {
+    var _popper$getAttribute;
+
+    var state = _ref2.state;
+    var _state$elements2 = state.elements,
+        popper = _state$elements2.popper,
+        reference = _state$elements2.reference;
+    var role = (_popper$getAttribute = popper.getAttribute('role')) == null ? void 0 : _popper$getAttribute.toLowerCase();
+
+    if (popper.id && role === 'tooltip' && 'setAttribute' in reference) {
+      var ids = reference.getAttribute('aria-describedby');
+
+      if (ids && ids.split(',').indexOf(popper.id) !== -1) {
+        return;
+      }
+
+      reference.setAttribute('aria-describedby', ids ? ids + "," + popper.id : popper.id);
+    }
+  }
+};
+var EMPTY_MODIFIERS = [];
+/**
+ * Position an element relative some reference element using Popper.js
+ *
+ * @param referenceElement
+ * @param popperElement
+ * @param {object}      options
+ * @param {object=}     options.modifiers Popper.js modifiers
+ * @param {boolean=}    options.enabled toggle the popper functionality on/off
+ * @param {string=}     options.placement The popper element placement relative to the reference element
+ * @param {string=}     options.strategy the positioning strategy
+ * @param {boolean=}    options.eventsEnabled have Popper listen on window resize events to reposition the element
+ * @param {function=}   options.onCreate called when the popper is created
+ * @param {function=}   options.onUpdate called when the popper is updated
+ *
+ * @returns {UsePopperState} The popper state
+ */
+
+function usePopper(referenceElement, popperElement, _temp) {
+  var _ref3 = _temp === void 0 ? {} : _temp,
+      _ref3$enabled = _ref3.enabled,
+      enabled = _ref3$enabled === void 0 ? true : _ref3$enabled,
+      _ref3$placement = _ref3.placement,
+      placement = _ref3$placement === void 0 ? 'bottom' : _ref3$placement,
+      _ref3$strategy = _ref3.strategy,
+      strategy = _ref3$strategy === void 0 ? 'absolute' : _ref3$strategy,
+      _ref3$modifiers = _ref3.modifiers,
+      modifiers = _ref3$modifiers === void 0 ? EMPTY_MODIFIERS : _ref3$modifiers,
+      config = (0,_babel_runtime_helpers_esm_objectWithoutPropertiesLoose__WEBPACK_IMPORTED_MODULE_1__["default"])(_ref3, ["enabled", "placement", "strategy", "modifiers"]);
+
+  var popperInstanceRef = (0,react__WEBPACK_IMPORTED_MODULE_2__.useRef)();
+  var update = (0,react__WEBPACK_IMPORTED_MODULE_2__.useCallback)(function () {
+    var _popperInstanceRef$cu;
+
+    (_popperInstanceRef$cu = popperInstanceRef.current) == null ? void 0 : _popperInstanceRef$cu.update();
+  }, []);
+  var forceUpdate = (0,react__WEBPACK_IMPORTED_MODULE_2__.useCallback)(function () {
+    var _popperInstanceRef$cu2;
+
+    (_popperInstanceRef$cu2 = popperInstanceRef.current) == null ? void 0 : _popperInstanceRef$cu2.forceUpdate();
+  }, []);
+
+  var _useSafeState = (0,_restart_hooks_useSafeState__WEBPACK_IMPORTED_MODULE_3__["default"])((0,react__WEBPACK_IMPORTED_MODULE_2__.useState)({
+    placement: placement,
+    update: update,
+    forceUpdate: forceUpdate,
+    attributes: {},
+    styles: {
+      popper: initialPopperStyles(strategy),
+      arrow: {}
+    }
+  })),
+      popperState = _useSafeState[0],
+      setState = _useSafeState[1];
+
+  var updateModifier = (0,react__WEBPACK_IMPORTED_MODULE_2__.useMemo)(function () {
+    return {
+      name: 'updateStateModifier',
+      enabled: true,
+      phase: 'write',
+      requires: ['computeStyles'],
+      fn: function fn(_ref4) {
+        var state = _ref4.state;
+        var styles = {};
+        var attributes = {};
+        Object.keys(state.elements).forEach(function (element) {
+          styles[element] = state.styles[element];
+          attributes[element] = state.attributes[element];
+        });
+        setState({
+          state: state,
+          styles: styles,
+          attributes: attributes,
+          update: update,
+          forceUpdate: forceUpdate,
+          placement: state.placement
+        });
+      }
+    };
+  }, [update, forceUpdate, setState]);
+  (0,react__WEBPACK_IMPORTED_MODULE_2__.useEffect)(function () {
+    if (!popperInstanceRef.current || !enabled) return;
+    popperInstanceRef.current.setOptions({
+      placement: placement,
+      strategy: strategy,
+      modifiers: [].concat(modifiers, [updateModifier, disabledApplyStylesModifier])
+    }); // intentionally NOT re-running on new modifiers
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [strategy, placement, updateModifier, enabled]);
+  (0,react__WEBPACK_IMPORTED_MODULE_2__.useEffect)(function () {
+    if (!enabled || referenceElement == null || popperElement == null) {
+      return undefined;
+    }
+
+    popperInstanceRef.current = (0,_popper__WEBPACK_IMPORTED_MODULE_4__.createPopper)(referenceElement, popperElement, (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, config, {
+      placement: placement,
+      strategy: strategy,
+      modifiers: [].concat(modifiers, [ariaDescribedByModifier, updateModifier])
+    }));
+    return function () {
+      if (popperInstanceRef.current != null) {
+        popperInstanceRef.current.destroy();
+        popperInstanceRef.current = undefined;
+        setState(function (s) {
+          return (0,_babel_runtime_helpers_esm_extends__WEBPACK_IMPORTED_MODULE_0__["default"])({}, s, {
+            attributes: {},
+            styles: {
+              popper: initialPopperStyles(strategy)
+            }
+          });
+        });
+      }
+    }; // This is only run once to _create_ the popper
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, referenceElement, popperElement]);
+  return popperState;
+}
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (usePopper);
+
+/***/ }),
+
+/***/ "./node_modules/react-overlays/esm/useRootClose.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/react-overlays/esm/useRootClose.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var dom_helpers_contains__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! dom-helpers/contains */ "./node_modules/dom-helpers/esm/contains.js");
+/* harmony import */ var dom_helpers_listen__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! dom-helpers/listen */ "./node_modules/dom-helpers/esm/listen.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @restart/hooks/useEventCallback */ "./node_modules/@restart/hooks/esm/useEventCallback.js");
+/* harmony import */ var warning__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! warning */ "./node_modules/warning/warning.js");
+/* harmony import */ var warning__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(warning__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _ownerDocument__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./ownerDocument */ "./node_modules/react-overlays/esm/ownerDocument.js");
+
+
+
+
+
+
+var escapeKeyCode = 27;
+
+var noop = function noop() {};
+
+function isLeftClickEvent(event) {
+  return event.button === 0;
+}
+
+function isModifiedEvent(event) {
+  return !!(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
+}
+
+var getRefTarget = function getRefTarget(ref) {
+  return ref && ('current' in ref ? ref.current : ref);
+};
+
+/**
+ * The `useRootClose` hook registers your callback on the document
+ * when rendered. Powers the `<Overlay/>` component. This is used achieve modal
+ * style behavior where your callback is triggered when the user tries to
+ * interact with the rest of the document or hits the `esc` key.
+ *
+ * @param {Ref<HTMLElement>| HTMLElement} ref  The element boundary
+ * @param {function} onRootClose
+ * @param {object=}  options
+ * @param {boolean=} options.disabled
+ * @param {string=}  options.clickTrigger The DOM event name (click, mousedown, etc) to attach listeners on
+ */
+function useRootClose(ref, onRootClose, _temp) {
+  var _ref = _temp === void 0 ? {} : _temp,
+      disabled = _ref.disabled,
+      _ref$clickTrigger = _ref.clickTrigger,
+      clickTrigger = _ref$clickTrigger === void 0 ? 'click' : _ref$clickTrigger;
+
+  var preventMouseRootCloseRef = (0,react__WEBPACK_IMPORTED_MODULE_2__.useRef)(false);
+  var onClose = onRootClose || noop;
+  var handleMouseCapture = (0,react__WEBPACK_IMPORTED_MODULE_2__.useCallback)(function (e) {
+    var currentTarget = getRefTarget(ref);
+    warning__WEBPACK_IMPORTED_MODULE_4___default()(!!currentTarget, 'RootClose captured a close event but does not have a ref to compare it to. ' + 'useRootClose(), should be passed a ref that resolves to a DOM node');
+    preventMouseRootCloseRef.current = !currentTarget || isModifiedEvent(e) || !isLeftClickEvent(e) || !!(0,dom_helpers_contains__WEBPACK_IMPORTED_MODULE_0__["default"])(currentTarget, e.target);
+  }, [ref]);
+  var handleMouse = (0,_restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_3__["default"])(function (e) {
+    if (!preventMouseRootCloseRef.current) {
+      onClose(e);
+    }
+  });
+  var handleKeyUp = (0,_restart_hooks_useEventCallback__WEBPACK_IMPORTED_MODULE_3__["default"])(function (e) {
+    if (e.keyCode === escapeKeyCode) {
+      onClose(e);
+    }
+  });
+  (0,react__WEBPACK_IMPORTED_MODULE_2__.useEffect)(function () {
+    if (disabled || ref == null) return undefined; // Store the current event to avoid triggering handlers immediately
+    // https://github.com/facebook/react/issues/20074
+
+    var currentEvent = window.event;
+    var doc = (0,_ownerDocument__WEBPACK_IMPORTED_MODULE_5__["default"])(getRefTarget(ref)); // Use capture for this listener so it fires before React's listener, to
+    // avoid false positives in the contains() check below if the target DOM
+    // element is removed in the React mouse callback.
+
+    var removeMouseCaptureListener = (0,dom_helpers_listen__WEBPACK_IMPORTED_MODULE_1__["default"])(doc, clickTrigger, handleMouseCapture, true);
+    var removeMouseListener = (0,dom_helpers_listen__WEBPACK_IMPORTED_MODULE_1__["default"])(doc, clickTrigger, function (e) {
+      // skip if this event is the same as the one running when we added the handlers
+      if (e === currentEvent) {
+        currentEvent = undefined;
+        return;
+      }
+
+      handleMouse(e);
+    });
+    var removeKeyupListener = (0,dom_helpers_listen__WEBPACK_IMPORTED_MODULE_1__["default"])(doc, 'keyup', function (e) {
+      // skip if this event is the same as the one running when we added the handlers
+      if (e === currentEvent) {
+        currentEvent = undefined;
+        return;
+      }
+
+      handleKeyUp(e);
+    });
+    var mobileSafariHackListeners = [];
+
+    if ('ontouchstart' in doc.documentElement) {
+      mobileSafariHackListeners = [].slice.call(doc.body.children).map(function (el) {
+        return (0,dom_helpers_listen__WEBPACK_IMPORTED_MODULE_1__["default"])(el, 'mousemove', noop);
+      });
+    }
+
+    return function () {
+      removeMouseCaptureListener();
+      removeMouseListener();
+      removeKeyupListener();
+      mobileSafariHackListeners.forEach(function (remove) {
+        return remove();
+      });
+    };
+  }, [ref, disabled, clickTrigger, handleMouseCapture, handleMouse, handleKeyUp]);
+}
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (useRootClose);
+
+/***/ }),
+
 /***/ "./node_modules/react-redux/es/components/Context.js":
 /*!***********************************************************!*\
   !*** ./node_modules/react-redux/es/components/Context.js ***!
@@ -34383,6 +43789,2401 @@ function warning(message) {
   /* eslint-enable no-empty */
 
 }
+
+/***/ }),
+
+/***/ "./node_modules/react-router-dom/dist/index.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/react-router-dom/dist/index.js ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "AbortedDeferredError": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.AbortedDeferredError),
+/* harmony export */   "Await": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.Await),
+/* harmony export */   "BrowserRouter": () => (/* binding */ BrowserRouter),
+/* harmony export */   "Form": () => (/* binding */ Form),
+/* harmony export */   "HashRouter": () => (/* binding */ HashRouter),
+/* harmony export */   "Link": () => (/* binding */ Link),
+/* harmony export */   "MemoryRouter": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.MemoryRouter),
+/* harmony export */   "NavLink": () => (/* binding */ NavLink),
+/* harmony export */   "Navigate": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.Navigate),
+/* harmony export */   "NavigationType": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.Action),
+/* harmony export */   "Outlet": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.Outlet),
+/* harmony export */   "Route": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.Route),
+/* harmony export */   "Router": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.Router),
+/* harmony export */   "RouterProvider": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.RouterProvider),
+/* harmony export */   "Routes": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.Routes),
+/* harmony export */   "ScrollRestoration": () => (/* binding */ ScrollRestoration),
+/* harmony export */   "UNSAFE_DataRouterContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_DataRouterContext),
+/* harmony export */   "UNSAFE_DataRouterStateContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_DataRouterStateContext),
+/* harmony export */   "UNSAFE_DataStaticRouterContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_DataStaticRouterContext),
+/* harmony export */   "UNSAFE_LocationContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_LocationContext),
+/* harmony export */   "UNSAFE_NavigationContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_NavigationContext),
+/* harmony export */   "UNSAFE_RouteContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_RouteContext),
+/* harmony export */   "UNSAFE_enhanceManualRouteObjects": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_enhanceManualRouteObjects),
+/* harmony export */   "createBrowserRouter": () => (/* binding */ createBrowserRouter),
+/* harmony export */   "createHashRouter": () => (/* binding */ createHashRouter),
+/* harmony export */   "createMemoryRouter": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.createMemoryRouter),
+/* harmony export */   "createPath": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.createPath),
+/* harmony export */   "createRoutesFromChildren": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.createRoutesFromChildren),
+/* harmony export */   "createRoutesFromElements": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.createRoutesFromElements),
+/* harmony export */   "createSearchParams": () => (/* binding */ createSearchParams),
+/* harmony export */   "defer": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.defer),
+/* harmony export */   "generatePath": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.generatePath),
+/* harmony export */   "isRouteErrorResponse": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.isRouteErrorResponse),
+/* harmony export */   "json": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.json),
+/* harmony export */   "matchPath": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.matchPath),
+/* harmony export */   "matchRoutes": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.matchRoutes),
+/* harmony export */   "parsePath": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.parsePath),
+/* harmony export */   "redirect": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.redirect),
+/* harmony export */   "renderMatches": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.renderMatches),
+/* harmony export */   "resolvePath": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_1__.resolvePath),
+/* harmony export */   "unstable_HistoryRouter": () => (/* binding */ HistoryRouter),
+/* harmony export */   "useActionData": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useActionData),
+/* harmony export */   "useAsyncError": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useAsyncError),
+/* harmony export */   "useAsyncValue": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useAsyncValue),
+/* harmony export */   "useFetcher": () => (/* binding */ useFetcher),
+/* harmony export */   "useFetchers": () => (/* binding */ useFetchers),
+/* harmony export */   "useFormAction": () => (/* binding */ useFormAction),
+/* harmony export */   "useHref": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useHref),
+/* harmony export */   "useInRouterContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useInRouterContext),
+/* harmony export */   "useLinkClickHandler": () => (/* binding */ useLinkClickHandler),
+/* harmony export */   "useLoaderData": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useLoaderData),
+/* harmony export */   "useLocation": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useLocation),
+/* harmony export */   "useMatch": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useMatch),
+/* harmony export */   "useMatches": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useMatches),
+/* harmony export */   "useNavigate": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useNavigate),
+/* harmony export */   "useNavigation": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useNavigation),
+/* harmony export */   "useNavigationType": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useNavigationType),
+/* harmony export */   "useOutlet": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useOutlet),
+/* harmony export */   "useOutletContext": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useOutletContext),
+/* harmony export */   "useParams": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useParams),
+/* harmony export */   "useResolvedPath": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useResolvedPath),
+/* harmony export */   "useRevalidator": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useRevalidator),
+/* harmony export */   "useRouteError": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useRouteError),
+/* harmony export */   "useRouteLoaderData": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useRouteLoaderData),
+/* harmony export */   "useRoutes": () => (/* reexport safe */ react_router__WEBPACK_IMPORTED_MODULE_2__.useRoutes),
+/* harmony export */   "useSearchParams": () => (/* binding */ useSearchParams),
+/* harmony export */   "useSubmit": () => (/* binding */ useSubmit)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react-router */ "./node_modules/react-router/dist/index.js");
+/* harmony import */ var react_router__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @remix-run/router */ "./node_modules/@remix-run/router/dist/router.js");
+/**
+ * React Router DOM v6.4.3
+ *
+ * Copyright (c) Remix Software Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.md file in the root directory of this source tree.
+ *
+ * @license MIT
+ */
+
+
+
+
+
+function _extends() {
+  _extends = Object.assign ? Object.assign.bind() : function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+  return _extends.apply(this, arguments);
+}
+
+function _objectWithoutPropertiesLoose(source, excluded) {
+  if (source == null) return {};
+  var target = {};
+  var sourceKeys = Object.keys(source);
+  var key, i;
+
+  for (i = 0; i < sourceKeys.length; i++) {
+    key = sourceKeys[i];
+    if (excluded.indexOf(key) >= 0) continue;
+    target[key] = source[key];
+  }
+
+  return target;
+}
+
+const defaultMethod = "get";
+const defaultEncType = "application/x-www-form-urlencoded";
+function isHtmlElement(object) {
+  return object != null && typeof object.tagName === "string";
+}
+function isButtonElement(object) {
+  return isHtmlElement(object) && object.tagName.toLowerCase() === "button";
+}
+function isFormElement(object) {
+  return isHtmlElement(object) && object.tagName.toLowerCase() === "form";
+}
+function isInputElement(object) {
+  return isHtmlElement(object) && object.tagName.toLowerCase() === "input";
+}
+
+function isModifiedEvent(event) {
+  return !!(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
+}
+
+function shouldProcessLinkClick(event, target) {
+  return event.button === 0 && ( // Ignore everything but left clicks
+  !target || target === "_self") && // Let browser handle "target=_blank" etc.
+  !isModifiedEvent(event) // Ignore clicks with modifier keys
+  ;
+}
+/**
+ * Creates a URLSearchParams object using the given initializer.
+ *
+ * This is identical to `new URLSearchParams(init)` except it also
+ * supports arrays as values in the object form of the initializer
+ * instead of just strings. This is convenient when you need multiple
+ * values for a given key, but don't want to use an array initializer.
+ *
+ * For example, instead of:
+ *
+ *   let searchParams = new URLSearchParams([
+ *     ['sort', 'name'],
+ *     ['sort', 'price']
+ *   ]);
+ *
+ * you can do:
+ *
+ *   let searchParams = createSearchParams({
+ *     sort: ['name', 'price']
+ *   });
+ */
+
+function createSearchParams(init) {
+  if (init === void 0) {
+    init = "";
+  }
+
+  return new URLSearchParams(typeof init === "string" || Array.isArray(init) || init instanceof URLSearchParams ? init : Object.keys(init).reduce((memo, key) => {
+    let value = init[key];
+    return memo.concat(Array.isArray(value) ? value.map(v => [key, v]) : [[key, value]]);
+  }, []));
+}
+function getSearchParamsForLocation(locationSearch, defaultSearchParams) {
+  let searchParams = createSearchParams(locationSearch);
+
+  for (let key of defaultSearchParams.keys()) {
+    if (!searchParams.has(key)) {
+      defaultSearchParams.getAll(key).forEach(value => {
+        searchParams.append(key, value);
+      });
+    }
+  }
+
+  return searchParams;
+}
+function getFormSubmissionInfo(target, defaultAction, options) {
+  let method;
+  let action;
+  let encType;
+  let formData;
+
+  if (isFormElement(target)) {
+    let submissionTrigger = options.submissionTrigger;
+    method = options.method || target.getAttribute("method") || defaultMethod;
+    action = options.action || target.getAttribute("action") || defaultAction;
+    encType = options.encType || target.getAttribute("enctype") || defaultEncType;
+    formData = new FormData(target);
+
+    if (submissionTrigger && submissionTrigger.name) {
+      formData.append(submissionTrigger.name, submissionTrigger.value);
+    }
+  } else if (isButtonElement(target) || isInputElement(target) && (target.type === "submit" || target.type === "image")) {
+    let form = target.form;
+
+    if (form == null) {
+      throw new Error("Cannot submit a <button> or <input type=\"submit\"> without a <form>");
+    } // <button>/<input type="submit"> may override attributes of <form>
+
+
+    method = options.method || target.getAttribute("formmethod") || form.getAttribute("method") || defaultMethod;
+    action = options.action || target.getAttribute("formaction") || form.getAttribute("action") || defaultAction;
+    encType = options.encType || target.getAttribute("formenctype") || form.getAttribute("enctype") || defaultEncType;
+    formData = new FormData(form); // Include name + value from a <button>, appending in case the button name
+    // matches an existing input name
+
+    if (target.name) {
+      formData.append(target.name, target.value);
+    }
+  } else if (isHtmlElement(target)) {
+    throw new Error("Cannot submit element that is not <form>, <button>, or " + "<input type=\"submit|image\">");
+  } else {
+    method = options.method || defaultMethod;
+    action = options.action || defaultAction;
+    encType = options.encType || defaultEncType;
+
+    if (target instanceof FormData) {
+      formData = target;
+    } else {
+      formData = new FormData();
+
+      if (target instanceof URLSearchParams) {
+        for (let [name, value] of target) {
+          formData.append(name, value);
+        }
+      } else if (target != null) {
+        for (let name of Object.keys(target)) {
+          formData.append(name, target[name]);
+        }
+      }
+    }
+  }
+
+  let {
+    protocol,
+    host
+  } = window.location;
+  let url = new URL(action, protocol + "//" + host);
+  return {
+    url,
+    method,
+    encType,
+    formData
+  };
+}
+
+const _excluded = ["onClick", "relative", "reloadDocument", "replace", "state", "target", "to", "preventScrollReset"],
+      _excluded2 = ["aria-current", "caseSensitive", "className", "end", "style", "to", "children"],
+      _excluded3 = ["reloadDocument", "replace", "method", "action", "onSubmit", "fetcherKey", "routeId", "relative"];
+//#region Routers
+////////////////////////////////////////////////////////////////////////////////
+
+function createBrowserRouter(routes, opts) {
+  var _window;
+
+  return (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createRouter)({
+    basename: opts == null ? void 0 : opts.basename,
+    history: (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createBrowserHistory)({
+      window: opts == null ? void 0 : opts.window
+    }),
+    hydrationData: (opts == null ? void 0 : opts.hydrationData) || ((_window = window) == null ? void 0 : _window.__staticRouterHydrationData),
+    routes: (0,react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_enhanceManualRouteObjects)(routes)
+  }).initialize();
+}
+function createHashRouter(routes, opts) {
+  var _window2;
+
+  return (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createRouter)({
+    basename: opts == null ? void 0 : opts.basename,
+    history: (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createHashHistory)({
+      window: opts == null ? void 0 : opts.window
+    }),
+    hydrationData: (opts == null ? void 0 : opts.hydrationData) || ((_window2 = window) == null ? void 0 : _window2.__staticRouterHydrationData),
+    routes: (0,react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_enhanceManualRouteObjects)(routes)
+  }).initialize();
+}
+/**
+ * A `<Router>` for use in web browsers. Provides the cleanest URLs.
+ */
+
+function BrowserRouter(_ref) {
+  let {
+    basename,
+    children,
+    window
+  } = _ref;
+  let historyRef = react__WEBPACK_IMPORTED_MODULE_0__.useRef();
+
+  if (historyRef.current == null) {
+    historyRef.current = (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createBrowserHistory)({
+      window,
+      v5Compat: true
+    });
+  }
+
+  let history = historyRef.current;
+  let [state, setState] = react__WEBPACK_IMPORTED_MODULE_0__.useState({
+    action: history.action,
+    location: history.location
+  });
+  react__WEBPACK_IMPORTED_MODULE_0__.useLayoutEffect(() => history.listen(setState), [history]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement(react_router__WEBPACK_IMPORTED_MODULE_2__.Router, {
+    basename: basename,
+    children: children,
+    location: state.location,
+    navigationType: state.action,
+    navigator: history
+  });
+}
+/**
+ * A `<Router>` for use in web browsers. Stores the location in the hash
+ * portion of the URL so it is not sent to the server.
+ */
+
+function HashRouter(_ref2) {
+  let {
+    basename,
+    children,
+    window
+  } = _ref2;
+  let historyRef = react__WEBPACK_IMPORTED_MODULE_0__.useRef();
+
+  if (historyRef.current == null) {
+    historyRef.current = (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createHashHistory)({
+      window,
+      v5Compat: true
+    });
+  }
+
+  let history = historyRef.current;
+  let [state, setState] = react__WEBPACK_IMPORTED_MODULE_0__.useState({
+    action: history.action,
+    location: history.location
+  });
+  react__WEBPACK_IMPORTED_MODULE_0__.useLayoutEffect(() => history.listen(setState), [history]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement(react_router__WEBPACK_IMPORTED_MODULE_2__.Router, {
+    basename: basename,
+    children: children,
+    location: state.location,
+    navigationType: state.action,
+    navigator: history
+  });
+}
+/**
+ * A `<Router>` that accepts a pre-instantiated history object. It's important
+ * to note that using your own history object is highly discouraged and may add
+ * two versions of the history library to your bundles unless you use the same
+ * version of the history library that React Router uses internally.
+ */
+
+function HistoryRouter(_ref3) {
+  let {
+    basename,
+    children,
+    history
+  } = _ref3;
+  const [state, setState] = react__WEBPACK_IMPORTED_MODULE_0__.useState({
+    action: history.action,
+    location: history.location
+  });
+  react__WEBPACK_IMPORTED_MODULE_0__.useLayoutEffect(() => history.listen(setState), [history]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement(react_router__WEBPACK_IMPORTED_MODULE_2__.Router, {
+    basename: basename,
+    children: children,
+    location: state.location,
+    navigationType: state.action,
+    navigator: history
+  });
+}
+
+if (true) {
+  HistoryRouter.displayName = "unstable_HistoryRouter";
+}
+/**
+ * The public API for rendering a history-aware <a>.
+ */
+
+const Link = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.forwardRef(function LinkWithRef(_ref4, ref) {
+  let {
+    onClick,
+    relative,
+    reloadDocument,
+    replace,
+    state,
+    target,
+    to,
+    preventScrollReset
+  } = _ref4,
+      rest = _objectWithoutPropertiesLoose(_ref4, _excluded);
+
+  let href = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useHref)(to, {
+    relative
+  });
+  let internalOnClick = useLinkClickHandler(to, {
+    replace,
+    state,
+    target,
+    preventScrollReset,
+    relative
+  });
+
+  function handleClick(event) {
+    if (onClick) onClick(event);
+
+    if (!event.defaultPrevented) {
+      internalOnClick(event);
+    }
+  }
+
+  return (
+    /*#__PURE__*/
+    // eslint-disable-next-line jsx-a11y/anchor-has-content
+    react__WEBPACK_IMPORTED_MODULE_0__.createElement("a", _extends({}, rest, {
+      href: href,
+      onClick: reloadDocument ? onClick : handleClick,
+      ref: ref,
+      target: target
+    }))
+  );
+});
+
+if (true) {
+  Link.displayName = "Link";
+}
+/**
+ * A <Link> wrapper that knows if it's "active" or not.
+ */
+
+
+const NavLink = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.forwardRef(function NavLinkWithRef(_ref5, ref) {
+  let {
+    "aria-current": ariaCurrentProp = "page",
+    caseSensitive = false,
+    className: classNameProp = "",
+    end = false,
+    style: styleProp,
+    to,
+    children
+  } = _ref5,
+      rest = _objectWithoutPropertiesLoose(_ref5, _excluded2);
+
+  let path = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useResolvedPath)(to, {
+    relative: rest.relative
+  });
+  let location = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useLocation)();
+  let routerState = react__WEBPACK_IMPORTED_MODULE_0__.useContext(react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_DataRouterStateContext);
+  let toPathname = path.pathname;
+  let locationPathname = location.pathname;
+  let nextLocationPathname = routerState && routerState.navigation && routerState.navigation.location ? routerState.navigation.location.pathname : null;
+
+  if (!caseSensitive) {
+    locationPathname = locationPathname.toLowerCase();
+    nextLocationPathname = nextLocationPathname ? nextLocationPathname.toLowerCase() : null;
+    toPathname = toPathname.toLowerCase();
+  }
+
+  let isActive = locationPathname === toPathname || !end && locationPathname.startsWith(toPathname) && locationPathname.charAt(toPathname.length) === "/";
+  let isPending = nextLocationPathname != null && (nextLocationPathname === toPathname || !end && nextLocationPathname.startsWith(toPathname) && nextLocationPathname.charAt(toPathname.length) === "/");
+  let ariaCurrent = isActive ? ariaCurrentProp : undefined;
+  let className;
+
+  if (typeof classNameProp === "function") {
+    className = classNameProp({
+      isActive,
+      isPending
+    });
+  } else {
+    // If the className prop is not a function, we use a default `active`
+    // class for <NavLink />s that are active. In v5 `active` was the default
+    // value for `activeClassName`, but we are removing that API and can still
+    // use the old default behavior for a cleaner upgrade path and keep the
+    // simple styling rules working as they currently do.
+    className = [classNameProp, isActive ? "active" : null, isPending ? "pending" : null].filter(Boolean).join(" ");
+  }
+
+  let style = typeof styleProp === "function" ? styleProp({
+    isActive,
+    isPending
+  }) : styleProp;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement(Link, _extends({}, rest, {
+    "aria-current": ariaCurrent,
+    className: className,
+    ref: ref,
+    style: style,
+    to: to
+  }), typeof children === "function" ? children({
+    isActive,
+    isPending
+  }) : children);
+});
+
+if (true) {
+  NavLink.displayName = "NavLink";
+}
+/**
+ * A `@remix-run/router`-aware `<form>`. It behaves like a normal form except
+ * that the interaction with the server is with `fetch` instead of new document
+ * requests, allowing components to add nicer UX to the page as the form is
+ * submitted and returns with data.
+ */
+
+
+const Form = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.forwardRef((props, ref) => {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement(FormImpl, _extends({}, props, {
+    ref: ref
+  }));
+});
+
+if (true) {
+  Form.displayName = "Form";
+}
+
+const FormImpl = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.forwardRef((_ref6, forwardedRef) => {
+  let {
+    reloadDocument,
+    replace,
+    method = defaultMethod,
+    action,
+    onSubmit,
+    fetcherKey,
+    routeId,
+    relative
+  } = _ref6,
+      props = _objectWithoutPropertiesLoose(_ref6, _excluded3);
+
+  let submit = useSubmitImpl(fetcherKey, routeId);
+  let formMethod = method.toLowerCase() === "get" ? "get" : "post";
+  let formAction = useFormAction(action, {
+    relative
+  });
+
+  let submitHandler = event => {
+    onSubmit && onSubmit(event);
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    let submitter = event.nativeEvent.submitter;
+    submit(submitter || event.currentTarget, {
+      method,
+      replace,
+      relative
+    });
+  };
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement("form", _extends({
+    ref: forwardedRef,
+    method: formMethod,
+    action: formAction,
+    onSubmit: reloadDocument ? onSubmit : submitHandler
+  }, props));
+});
+
+if (true) {
+  Form.displayName = "Form";
+}
+/**
+ * This component will emulate the browser's scroll restoration on location
+ * changes.
+ */
+
+
+function ScrollRestoration(_ref7) {
+  let {
+    getKey,
+    storageKey
+  } = _ref7;
+  useScrollRestoration({
+    getKey,
+    storageKey
+  });
+  return null;
+}
+
+if (true) {
+  ScrollRestoration.displayName = "ScrollRestoration";
+} //#endregion
+////////////////////////////////////////////////////////////////////////////////
+//#region Hooks
+////////////////////////////////////////////////////////////////////////////////
+
+
+var DataRouterHook;
+
+(function (DataRouterHook) {
+  DataRouterHook["UseScrollRestoration"] = "useScrollRestoration";
+  DataRouterHook["UseSubmitImpl"] = "useSubmitImpl";
+  DataRouterHook["UseFetcher"] = "useFetcher";
+})(DataRouterHook || (DataRouterHook = {}));
+
+var DataRouterStateHook;
+
+(function (DataRouterStateHook) {
+  DataRouterStateHook["UseFetchers"] = "useFetchers";
+  DataRouterStateHook["UseScrollRestoration"] = "useScrollRestoration";
+})(DataRouterStateHook || (DataRouterStateHook = {}));
+
+function getDataRouterConsoleError(hookName) {
+  return hookName + " must be used within a data router.  See https://reactrouter.com/en/main/routers/picking-a-router.";
+}
+
+function useDataRouterContext(hookName) {
+  let ctx = react__WEBPACK_IMPORTED_MODULE_0__.useContext(react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_DataRouterContext);
+  !ctx ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, getDataRouterConsoleError(hookName)) : 0 : void 0;
+  return ctx;
+}
+
+function useDataRouterState(hookName) {
+  let state = react__WEBPACK_IMPORTED_MODULE_0__.useContext(react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_DataRouterStateContext);
+  !state ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, getDataRouterConsoleError(hookName)) : 0 : void 0;
+  return state;
+}
+/**
+ * Handles the click behavior for router `<Link>` components. This is useful if
+ * you need to create custom `<Link>` components with the same click behavior we
+ * use in our exported `<Link>`.
+ */
+
+
+function useLinkClickHandler(to, _temp) {
+  let {
+    target,
+    replace: replaceProp,
+    state,
+    preventScrollReset,
+    relative
+  } = _temp === void 0 ? {} : _temp;
+  let navigate = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useNavigate)();
+  let location = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useLocation)();
+  let path = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useResolvedPath)(to, {
+    relative
+  });
+  return react__WEBPACK_IMPORTED_MODULE_0__.useCallback(event => {
+    if (shouldProcessLinkClick(event, target)) {
+      event.preventDefault(); // If the URL hasn't changed, a regular <a> will do a replace instead of
+      // a push, so do the same here unless the replace prop is explicitly set
+
+      let replace = replaceProp !== undefined ? replaceProp : (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createPath)(location) === (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createPath)(path);
+      navigate(to, {
+        replace,
+        state,
+        preventScrollReset,
+        relative
+      });
+    }
+  }, [location, navigate, path, replaceProp, state, target, to, preventScrollReset, relative]);
+}
+/**
+ * A convenient wrapper for reading and writing search parameters via the
+ * URLSearchParams interface.
+ */
+
+function useSearchParams(defaultInit) {
+   true ? warning(typeof URLSearchParams !== "undefined", "You cannot use the `useSearchParams` hook in a browser that does not " + "support the URLSearchParams API. If you need to support Internet " + "Explorer 11, we recommend you load a polyfill such as " + "https://github.com/ungap/url-search-params\n\n" + "If you're unsure how to load polyfills, we recommend you check out " + "https://polyfill.io/v3/ which provides some recommendations about how " + "to load polyfills only for users that need them, instead of for every " + "user.") : 0;
+  let defaultSearchParamsRef = react__WEBPACK_IMPORTED_MODULE_0__.useRef(createSearchParams(defaultInit));
+  let location = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useLocation)();
+  let searchParams = react__WEBPACK_IMPORTED_MODULE_0__.useMemo(() => getSearchParamsForLocation(location.search, defaultSearchParamsRef.current), [location.search]);
+  let navigate = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useNavigate)();
+  let setSearchParams = react__WEBPACK_IMPORTED_MODULE_0__.useCallback((nextInit, navigateOptions) => {
+    const newSearchParams = createSearchParams(typeof nextInit === "function" ? nextInit(searchParams) : nextInit);
+    navigate("?" + newSearchParams, navigateOptions);
+  }, [navigate, searchParams]);
+  return [searchParams, setSearchParams];
+}
+/**
+ * Returns a function that may be used to programmatically submit a form (or
+ * some arbitrary data) to the server.
+ */
+
+function useSubmit() {
+  return useSubmitImpl();
+}
+
+function useSubmitImpl(fetcherKey, routeId) {
+  let {
+    router
+  } = useDataRouterContext(DataRouterHook.UseSubmitImpl);
+  let defaultAction = useFormAction();
+  return react__WEBPACK_IMPORTED_MODULE_0__.useCallback(function (target, options) {
+    if (options === void 0) {
+      options = {};
+    }
+
+    if (typeof document === "undefined") {
+      throw new Error("You are calling submit during the server render. " + "Try calling submit within a `useEffect` or callback instead.");
+    }
+
+    let {
+      method,
+      encType,
+      formData,
+      url
+    } = getFormSubmissionInfo(target, defaultAction, options);
+    let href = url.pathname + url.search;
+    let opts = {
+      replace: options.replace,
+      formData,
+      formMethod: method,
+      formEncType: encType
+    };
+
+    if (fetcherKey) {
+      !(routeId != null) ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, "No routeId available for useFetcher()") : 0 : void 0;
+      router.fetch(fetcherKey, routeId, href, opts);
+    } else {
+      router.navigate(href, opts);
+    }
+  }, [defaultAction, router, fetcherKey, routeId]);
+}
+
+function useFormAction(action, _temp2) {
+  let {
+    relative
+  } = _temp2 === void 0 ? {} : _temp2;
+  let {
+    basename
+  } = react__WEBPACK_IMPORTED_MODULE_0__.useContext(react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_NavigationContext);
+  let routeContext = react__WEBPACK_IMPORTED_MODULE_0__.useContext(react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_RouteContext);
+  !routeContext ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, "useFormAction must be used inside a RouteContext") : 0 : void 0;
+  let [match] = routeContext.matches.slice(-1);
+  let resolvedAction = action != null ? action : "."; // Shallow clone path so we can modify it below, otherwise we modify the
+  // object referenced by useMemo inside useResolvedPath
+
+  let path = _extends({}, (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useResolvedPath)(resolvedAction, {
+    relative
+  })); // Previously we set the default action to ".". The problem with this is that
+  // `useResolvedPath(".")` excludes search params and the hash of the resolved
+  // URL. This is the intended behavior of when "." is specifically provided as
+  // the form action, but inconsistent w/ browsers when the action is omitted.
+  // https://github.com/remix-run/remix/issues/927
+
+
+  let location = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useLocation)();
+
+  if (action == null) {
+    // Safe to write to these directly here since if action was undefined, we
+    // would have called useResolvedPath(".") which will never include a search
+    // or hash
+    path.search = location.search;
+    path.hash = location.hash; // When grabbing search params from the URL, remove the automatically
+    // inserted ?index param so we match the useResolvedPath search behavior
+    // which would not include ?index
+
+    if (match.route.index) {
+      let params = new URLSearchParams(path.search);
+      params.delete("index");
+      path.search = params.toString() ? "?" + params.toString() : "";
+    }
+  }
+
+  if ((!action || action === ".") && match.route.index) {
+    path.search = path.search ? path.search.replace(/^\?/, "?index&") : "?index";
+  } // If we're operating within a basename, prepend it to the pathname prior
+  // to creating the form action.  If this is a root navigation, then just use
+  // the raw basename which allows the basename to have full control over the
+  // presence of a trailing slash on root actions
+
+
+  if (basename !== "/") {
+    path.pathname = path.pathname === "/" ? basename : (0,react_router__WEBPACK_IMPORTED_MODULE_1__.joinPaths)([basename, path.pathname]);
+  }
+
+  return (0,react_router__WEBPACK_IMPORTED_MODULE_1__.createPath)(path);
+}
+
+function createFetcherForm(fetcherKey, routeId) {
+  let FetcherForm = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.forwardRef((props, ref) => {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0__.createElement(FormImpl, _extends({}, props, {
+      ref: ref,
+      fetcherKey: fetcherKey,
+      routeId: routeId
+    }));
+  });
+
+  if (true) {
+    FetcherForm.displayName = "fetcher.Form";
+  }
+
+  return FetcherForm;
+}
+
+let fetcherId = 0;
+/**
+ * Interacts with route loaders and actions without causing a navigation. Great
+ * for any interaction that stays on the same page.
+ */
+
+function useFetcher() {
+  var _route$matches;
+
+  let {
+    router
+  } = useDataRouterContext(DataRouterHook.UseFetcher);
+  let route = react__WEBPACK_IMPORTED_MODULE_0__.useContext(react_router__WEBPACK_IMPORTED_MODULE_2__.UNSAFE_RouteContext);
+  !route ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, "useFetcher must be used inside a RouteContext") : 0 : void 0;
+  let routeId = (_route$matches = route.matches[route.matches.length - 1]) == null ? void 0 : _route$matches.route.id;
+  !(routeId != null) ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, "useFetcher can only be used on routes that contain a unique \"id\"") : 0 : void 0;
+  let [fetcherKey] = react__WEBPACK_IMPORTED_MODULE_0__.useState(() => String(++fetcherId));
+  let [Form] = react__WEBPACK_IMPORTED_MODULE_0__.useState(() => {
+    !routeId ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, "No routeId available for fetcher.Form()") : 0 : void 0;
+    return createFetcherForm(fetcherKey, routeId);
+  });
+  let [load] = react__WEBPACK_IMPORTED_MODULE_0__.useState(() => href => {
+    !router ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, "No router available for fetcher.load()") : 0 : void 0;
+    !routeId ?  true ? (0,react_router__WEBPACK_IMPORTED_MODULE_1__.invariant)(false, "No routeId available for fetcher.load()") : 0 : void 0;
+    router.fetch(fetcherKey, routeId, href);
+  });
+  let submit = useSubmitImpl(fetcherKey, routeId);
+  let fetcher = router.getFetcher(fetcherKey);
+  let fetcherWithComponents = react__WEBPACK_IMPORTED_MODULE_0__.useMemo(() => _extends({
+    Form,
+    submit,
+    load
+  }, fetcher), [fetcher, Form, submit, load]);
+  react__WEBPACK_IMPORTED_MODULE_0__.useEffect(() => {
+    // Is this busted when the React team gets real weird and calls effects
+    // twice on mount?  We really just need to garbage collect here when this
+    // fetcher is no longer around.
+    return () => {
+      if (!router) {
+        console.warn("No fetcher available to clean up from useFetcher()");
+        return;
+      }
+
+      router.deleteFetcher(fetcherKey);
+    };
+  }, [router, fetcherKey]);
+  return fetcherWithComponents;
+}
+/**
+ * Provides all fetchers currently on the page. Useful for layouts and parent
+ * routes that need to provide pending/optimistic UI regarding the fetch.
+ */
+
+function useFetchers() {
+  let state = useDataRouterState(DataRouterStateHook.UseFetchers);
+  return [...state.fetchers.values()];
+}
+const SCROLL_RESTORATION_STORAGE_KEY = "react-router-scroll-positions";
+let savedScrollPositions = {};
+/**
+ * When rendered inside a RouterProvider, will restore scroll positions on navigations
+ */
+
+function useScrollRestoration(_temp3) {
+  let {
+    getKey,
+    storageKey
+  } = _temp3 === void 0 ? {} : _temp3;
+  let {
+    router
+  } = useDataRouterContext(DataRouterHook.UseScrollRestoration);
+  let {
+    restoreScrollPosition,
+    preventScrollReset
+  } = useDataRouterState(DataRouterStateHook.UseScrollRestoration);
+  let location = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useLocation)();
+  let matches = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useMatches)();
+  let navigation = (0,react_router__WEBPACK_IMPORTED_MODULE_2__.useNavigation)(); // Trigger manual scroll restoration while we're active
+
+  react__WEBPACK_IMPORTED_MODULE_0__.useEffect(() => {
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = "auto";
+    };
+  }, []); // Save positions on unload
+
+  useBeforeUnload(react__WEBPACK_IMPORTED_MODULE_0__.useCallback(() => {
+    if (navigation.state === "idle") {
+      let key = (getKey ? getKey(location, matches) : null) || location.key;
+      savedScrollPositions[key] = window.scrollY;
+    }
+
+    sessionStorage.setItem(storageKey || SCROLL_RESTORATION_STORAGE_KEY, JSON.stringify(savedScrollPositions));
+    window.history.scrollRestoration = "auto";
+  }, [storageKey, getKey, navigation.state, location, matches])); // Read in any saved scroll locations
+
+  react__WEBPACK_IMPORTED_MODULE_0__.useLayoutEffect(() => {
+    try {
+      let sessionPositions = sessionStorage.getItem(storageKey || SCROLL_RESTORATION_STORAGE_KEY);
+
+      if (sessionPositions) {
+        savedScrollPositions = JSON.parse(sessionPositions);
+      }
+    } catch (e) {// no-op, use default empty object
+    }
+  }, [storageKey]); // Enable scroll restoration in the router
+
+  react__WEBPACK_IMPORTED_MODULE_0__.useLayoutEffect(() => {
+    let disableScrollRestoration = router == null ? void 0 : router.enableScrollRestoration(savedScrollPositions, () => window.scrollY, getKey);
+    return () => disableScrollRestoration && disableScrollRestoration();
+  }, [router, getKey]); // Restore scrolling when state.restoreScrollPosition changes
+
+  react__WEBPACK_IMPORTED_MODULE_0__.useLayoutEffect(() => {
+    // Explicit false means don't do anything (used for submissions)
+    if (restoreScrollPosition === false) {
+      return;
+    } // been here before, scroll to it
+
+
+    if (typeof restoreScrollPosition === "number") {
+      window.scrollTo(0, restoreScrollPosition);
+      return;
+    } // try to scroll to the hash
+
+
+    if (location.hash) {
+      let el = document.getElementById(location.hash.slice(1));
+
+      if (el) {
+        el.scrollIntoView();
+        return;
+      }
+    } // Opt out of scroll reset if this link requested it
+
+
+    if (preventScrollReset === true) {
+      return;
+    } // otherwise go to the top on new locations
+
+
+    window.scrollTo(0, 0);
+  }, [location, restoreScrollPosition, preventScrollReset]);
+}
+
+function useBeforeUnload(callback) {
+  react__WEBPACK_IMPORTED_MODULE_0__.useEffect(() => {
+    window.addEventListener("beforeunload", callback);
+    return () => {
+      window.removeEventListener("beforeunload", callback);
+    };
+  }, [callback]);
+} //#endregion
+////////////////////////////////////////////////////////////////////////////////
+//#region Utils
+////////////////////////////////////////////////////////////////////////////////
+
+
+function warning(cond, message) {
+  if (!cond) {
+    // eslint-disable-next-line no-console
+    if (typeof console !== "undefined") console.warn(message);
+
+    try {
+      // Welcome to debugging React Router!
+      //
+      // This error is thrown as a convenience so you can more easily
+      // find the source for a warning that appears in the console by
+      // enabling "pause on exceptions" in your JavaScript debugger.
+      throw new Error(message); // eslint-disable-next-line no-empty
+    } catch (e) {}
+  }
+} //#endregion
+
+
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ "./node_modules/react-router/dist/index.js":
+/*!*************************************************!*\
+  !*** ./node_modules/react-router/dist/index.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+var react__WEBPACK_IMPORTED_MODULE_1___namespace_cache;
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "AbortedDeferredError": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.AbortedDeferredError),
+/* harmony export */   "Await": () => (/* binding */ Await),
+/* harmony export */   "MemoryRouter": () => (/* binding */ MemoryRouter),
+/* harmony export */   "Navigate": () => (/* binding */ Navigate),
+/* harmony export */   "NavigationType": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.Action),
+/* harmony export */   "Outlet": () => (/* binding */ Outlet),
+/* harmony export */   "Route": () => (/* binding */ Route),
+/* harmony export */   "Router": () => (/* binding */ Router),
+/* harmony export */   "RouterProvider": () => (/* binding */ RouterProvider),
+/* harmony export */   "Routes": () => (/* binding */ Routes),
+/* harmony export */   "UNSAFE_DataRouterContext": () => (/* binding */ DataRouterContext),
+/* harmony export */   "UNSAFE_DataRouterStateContext": () => (/* binding */ DataRouterStateContext),
+/* harmony export */   "UNSAFE_DataStaticRouterContext": () => (/* binding */ DataStaticRouterContext),
+/* harmony export */   "UNSAFE_LocationContext": () => (/* binding */ LocationContext),
+/* harmony export */   "UNSAFE_NavigationContext": () => (/* binding */ NavigationContext),
+/* harmony export */   "UNSAFE_RouteContext": () => (/* binding */ RouteContext),
+/* harmony export */   "UNSAFE_enhanceManualRouteObjects": () => (/* binding */ enhanceManualRouteObjects),
+/* harmony export */   "createMemoryRouter": () => (/* binding */ createMemoryRouter),
+/* harmony export */   "createPath": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.createPath),
+/* harmony export */   "createRoutesFromChildren": () => (/* binding */ createRoutesFromChildren),
+/* harmony export */   "createRoutesFromElements": () => (/* binding */ createRoutesFromChildren),
+/* harmony export */   "defer": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.defer),
+/* harmony export */   "generatePath": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.generatePath),
+/* harmony export */   "isRouteErrorResponse": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.isRouteErrorResponse),
+/* harmony export */   "json": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.json),
+/* harmony export */   "matchPath": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.matchPath),
+/* harmony export */   "matchRoutes": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.matchRoutes),
+/* harmony export */   "parsePath": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.parsePath),
+/* harmony export */   "redirect": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.redirect),
+/* harmony export */   "renderMatches": () => (/* binding */ renderMatches),
+/* harmony export */   "resolvePath": () => (/* reexport safe */ _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.resolvePath),
+/* harmony export */   "useActionData": () => (/* binding */ useActionData),
+/* harmony export */   "useAsyncError": () => (/* binding */ useAsyncError),
+/* harmony export */   "useAsyncValue": () => (/* binding */ useAsyncValue),
+/* harmony export */   "useHref": () => (/* binding */ useHref),
+/* harmony export */   "useInRouterContext": () => (/* binding */ useInRouterContext),
+/* harmony export */   "useLoaderData": () => (/* binding */ useLoaderData),
+/* harmony export */   "useLocation": () => (/* binding */ useLocation),
+/* harmony export */   "useMatch": () => (/* binding */ useMatch),
+/* harmony export */   "useMatches": () => (/* binding */ useMatches),
+/* harmony export */   "useNavigate": () => (/* binding */ useNavigate),
+/* harmony export */   "useNavigation": () => (/* binding */ useNavigation),
+/* harmony export */   "useNavigationType": () => (/* binding */ useNavigationType),
+/* harmony export */   "useOutlet": () => (/* binding */ useOutlet),
+/* harmony export */   "useOutletContext": () => (/* binding */ useOutletContext),
+/* harmony export */   "useParams": () => (/* binding */ useParams),
+/* harmony export */   "useResolvedPath": () => (/* binding */ useResolvedPath),
+/* harmony export */   "useRevalidator": () => (/* binding */ useRevalidator),
+/* harmony export */   "useRouteError": () => (/* binding */ useRouteError),
+/* harmony export */   "useRouteLoaderData": () => (/* binding */ useRouteLoaderData),
+/* harmony export */   "useRoutes": () => (/* binding */ useRoutes)
+/* harmony export */ });
+/* harmony import */ var _remix_run_router__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @remix-run/router */ "./node_modules/@remix-run/router/dist/router.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/**
+ * React Router v6.4.3
+ *
+ * Copyright (c) Remix Software Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.md file in the root directory of this source tree.
+ *
+ * @license MIT
+ */
+
+
+
+
+function _extends() {
+  _extends = Object.assign ? Object.assign.bind() : function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+  return _extends.apply(this, arguments);
+}
+
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+/**
+ * inlined Object.is polyfill to avoid requiring consumers ship their own
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+ */
+
+function isPolyfill(x, y) {
+  return x === y && (x !== 0 || 1 / x === 1 / y) || x !== x && y !== y // eslint-disable-line no-self-compare
+  ;
+}
+
+const is = typeof Object.is === "function" ? Object.is : isPolyfill; // Intentionally not using named imports because Rollup uses dynamic
+// dispatch for CommonJS interop named imports.
+
+const {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useDebugValue
+} = /*#__PURE__*/ (react__WEBPACK_IMPORTED_MODULE_1___namespace_cache || (react__WEBPACK_IMPORTED_MODULE_1___namespace_cache = __webpack_require__.t(react__WEBPACK_IMPORTED_MODULE_1__, 2)));
+let didWarnOld18Alpha = false;
+let didWarnUncachedGetSnapshot = false; // Disclaimer: This shim breaks many of the rules of React, and only works
+// because of a very particular set of implementation details and assumptions
+// -- change any one of them and it will break. The most important assumption
+// is that updates are always synchronous, because concurrent rendering is
+// only available in versions of React that also have a built-in
+// useSyncExternalStore API. And we only use this shim when the built-in API
+// does not exist.
+//
+// Do not assume that the clever hacks used by this hook also work in general.
+// The point of this shim is to replace the need for hacks by other libraries.
+
+function useSyncExternalStore$2(subscribe, getSnapshot, // Note: The shim does not use getServerSnapshot, because pre-18 versions of
+// React do not expose a way to check if we're hydrating. So users of the shim
+// will need to track that themselves and return the correct value
+// from `getSnapshot`.
+getServerSnapshot) {
+  if (true) {
+    if (!didWarnOld18Alpha) {
+      if ( false) {
+        didWarnOld18Alpha = true;
+        console.error("You are using an outdated, pre-release alpha of React 18 that " + "does not support useSyncExternalStore. The " + "use-sync-external-store shim will not work correctly. Upgrade " + "to a newer pre-release.");
+      }
+    }
+  } // Read the current snapshot from the store on every render. Again, this
+  // breaks the rules of React, and only works here because of specific
+  // implementation details, most importantly that updates are
+  // always synchronous.
+
+
+  const value = getSnapshot();
+
+  if (true) {
+    if (!didWarnUncachedGetSnapshot) {
+      const cachedValue = getSnapshot();
+
+      if (!is(value, cachedValue)) {
+        console.error("The result of getSnapshot should be cached to avoid an infinite loop");
+        didWarnUncachedGetSnapshot = true;
+      }
+    }
+  } // Because updates are synchronous, we don't queue them. Instead we force a
+  // re-render whenever the subscribed state changes by updating an some
+  // arbitrary useState hook. Then, during render, we call getSnapshot to read
+  // the current value.
+  //
+  // Because we don't actually use the state returned by the useState hook, we
+  // can save a bit of memory by storing other stuff in that slot.
+  //
+  // To implement the early bailout, we need to track some things on a mutable
+  // object. Usually, we would put that in a useRef hook, but we can stash it in
+  // our useState hook instead.
+  //
+  // To force a re-render, we call forceUpdate({inst}). That works because the
+  // new object always fails an equality check.
+
+
+  const [{
+    inst
+  }, forceUpdate] = useState({
+    inst: {
+      value,
+      getSnapshot
+    }
+  }); // Track the latest getSnapshot function with a ref. This needs to be updated
+  // in the layout phase so we can access it during the tearing check that
+  // happens on subscribe.
+
+  useLayoutEffect(() => {
+    inst.value = value;
+    inst.getSnapshot = getSnapshot; // Whenever getSnapshot or subscribe changes, we need to check in the
+    // commit phase if there was an interleaved mutation. In concurrent mode
+    // this can happen all the time, but even in synchronous mode, an earlier
+    // effect may have mutated the store.
+
+    if (checkIfSnapshotChanged(inst)) {
+      // Force a re-render.
+      forceUpdate({
+        inst
+      });
+    } // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  }, [subscribe, value, getSnapshot]);
+  useEffect(() => {
+    // Check for changes right before subscribing. Subsequent changes will be
+    // detected in the subscription handler.
+    if (checkIfSnapshotChanged(inst)) {
+      // Force a re-render.
+      forceUpdate({
+        inst
+      });
+    }
+
+    const handleStoreChange = () => {
+      // TODO: Because there is no cross-renderer API for batching updates, it's
+      // up to the consumer of this library to wrap their subscription event
+      // with unstable_batchedUpdates. Should we try to detect when this isn't
+      // the case and print a warning in development?
+      // The store changed. Check if the snapshot changed since the last time we
+      // read from the store.
+      if (checkIfSnapshotChanged(inst)) {
+        // Force a re-render.
+        forceUpdate({
+          inst
+        });
+      }
+    }; // Subscribe to the store and return a clean-up function.
+
+
+    return subscribe(handleStoreChange); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subscribe]);
+  useDebugValue(value);
+  return value;
+}
+
+function checkIfSnapshotChanged(inst) {
+  const latestGetSnapshot = inst.getSnapshot;
+  const prevValue = inst.value;
+
+  try {
+    const nextValue = latestGetSnapshot();
+    return !is(prevValue, nextValue);
+  } catch (error) {
+    return true;
+  }
+}
+
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow
+ */
+function useSyncExternalStore$1(subscribe, getSnapshot, getServerSnapshot) {
+  // Note: The shim does not use getServerSnapshot, because pre-18 versions of
+  // React do not expose a way to check if we're hydrating. So users of the shim
+  // will need to track that themselves and return the correct value
+  // from `getSnapshot`.
+  return getSnapshot();
+}
+
+/**
+ * Inlined into the react-router repo since use-sync-external-store does not
+ * provide a UMD-compatible package, so we need this to be able to distribute
+ * UMD react-router bundles
+ */
+const canUseDOM = !!(typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined");
+const isServerEnvironment = !canUseDOM;
+const shim = isServerEnvironment ? useSyncExternalStore$1 : useSyncExternalStore$2;
+const useSyncExternalStore =  false ? (module => module.useSyncExternalStore)(/*#__PURE__*/ (react__WEBPACK_IMPORTED_MODULE_1___namespace_cache || (react__WEBPACK_IMPORTED_MODULE_1___namespace_cache = __webpack_require__.t(react__WEBPACK_IMPORTED_MODULE_1__, 2)))) : shim;
+
+// Contexts for data routers
+const DataStaticRouterContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+
+if (true) {
+  DataStaticRouterContext.displayName = "DataStaticRouterContext";
+}
+
+const DataRouterContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+
+if (true) {
+  DataRouterContext.displayName = "DataRouter";
+}
+
+const DataRouterStateContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+
+if (true) {
+  DataRouterStateContext.displayName = "DataRouterState";
+}
+
+const AwaitContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+
+if (true) {
+  AwaitContext.displayName = "Await";
+}
+
+const NavigationContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+
+if (true) {
+  NavigationContext.displayName = "Navigation";
+}
+
+const LocationContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+
+if (true) {
+  LocationContext.displayName = "Location";
+}
+
+const RouteContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext({
+  outlet: null,
+  matches: []
+});
+
+if (true) {
+  RouteContext.displayName = "Route";
+}
+
+const RouteErrorContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+
+if (true) {
+  RouteErrorContext.displayName = "RouteError";
+}
+
+/**
+ * Returns the full href for the given "to" value. This is useful for building
+ * custom links that are also accessible and preserve right-click behavior.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-href
+ */
+
+function useHref(to, _temp) {
+  let {
+    relative
+  } = _temp === void 0 ? {} : _temp;
+  !useInRouterContext() ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, // TODO: This error is probably because they somehow have 2 versions of the
+  // router loaded. We can help them understand how to avoid that.
+  "useHref() may be used only in the context of a <Router> component.") : 0 : void 0;
+  let {
+    basename,
+    navigator
+  } = react__WEBPACK_IMPORTED_MODULE_1__.useContext(NavigationContext);
+  let {
+    hash,
+    pathname,
+    search
+  } = useResolvedPath(to, {
+    relative
+  });
+  let joinedPathname = pathname; // If we're operating within a basename, prepend it to the pathname prior
+  // to creating the href.  If this is a root navigation, then just use the raw
+  // basename which allows the basename to have full control over the presence
+  // of a trailing slash on root links
+
+  if (basename !== "/") {
+    joinedPathname = pathname === "/" ? basename : (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.joinPaths)([basename, pathname]);
+  }
+
+  return navigator.createHref({
+    pathname: joinedPathname,
+    search,
+    hash
+  });
+}
+/**
+ * Returns true if this component is a descendant of a <Router>.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-in-router-context
+ */
+
+function useInRouterContext() {
+  return react__WEBPACK_IMPORTED_MODULE_1__.useContext(LocationContext) != null;
+}
+/**
+ * Returns the current location object, which represents the current URL in web
+ * browsers.
+ *
+ * Note: If you're using this it may mean you're doing some of your own
+ * "routing" in your app, and we'd like to know what your use case is. We may
+ * be able to provide something higher-level to better suit your needs.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-location
+ */
+
+function useLocation() {
+  !useInRouterContext() ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, // TODO: This error is probably because they somehow have 2 versions of the
+  // router loaded. We can help them understand how to avoid that.
+  "useLocation() may be used only in the context of a <Router> component.") : 0 : void 0;
+  return react__WEBPACK_IMPORTED_MODULE_1__.useContext(LocationContext).location;
+}
+/**
+ * Returns the current navigation action which describes how the router came to
+ * the current location, either by a pop, push, or replace on the history stack.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-navigation-type
+ */
+
+function useNavigationType() {
+  return react__WEBPACK_IMPORTED_MODULE_1__.useContext(LocationContext).navigationType;
+}
+/**
+ * Returns true if the URL for the given "to" value matches the current URL.
+ * This is useful for components that need to know "active" state, e.g.
+ * <NavLink>.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-match
+ */
+
+function useMatch(pattern) {
+  !useInRouterContext() ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, // TODO: This error is probably because they somehow have 2 versions of the
+  // router loaded. We can help them understand how to avoid that.
+  "useMatch() may be used only in the context of a <Router> component.") : 0 : void 0;
+  let {
+    pathname
+  } = useLocation();
+  return react__WEBPACK_IMPORTED_MODULE_1__.useMemo(() => (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.matchPath)(pattern, pathname), [pathname, pattern]);
+}
+/**
+ * The interface for the navigate() function returned from useNavigate().
+ */
+
+/**
+ * Returns an imperative method for changing the location. Used by <Link>s, but
+ * may also be used by other elements to change the location.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-navigate
+ */
+function useNavigate() {
+  !useInRouterContext() ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, // TODO: This error is probably because they somehow have 2 versions of the
+  // router loaded. We can help them understand how to avoid that.
+  "useNavigate() may be used only in the context of a <Router> component.") : 0 : void 0;
+  let {
+    basename,
+    navigator
+  } = react__WEBPACK_IMPORTED_MODULE_1__.useContext(NavigationContext);
+  let {
+    matches
+  } = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext);
+  let {
+    pathname: locationPathname
+  } = useLocation();
+  let routePathnamesJson = JSON.stringify((0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.UNSAFE_getPathContributingMatches)(matches).map(match => match.pathnameBase));
+  let activeRef = react__WEBPACK_IMPORTED_MODULE_1__.useRef(false);
+  react__WEBPACK_IMPORTED_MODULE_1__.useEffect(() => {
+    activeRef.current = true;
+  });
+  let navigate = react__WEBPACK_IMPORTED_MODULE_1__.useCallback(function (to, options) {
+    if (options === void 0) {
+      options = {};
+    }
+
+     true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.warning)(activeRef.current, "You should call navigate() in a React.useEffect(), not when " + "your component is first rendered.") : 0;
+    if (!activeRef.current) return;
+
+    if (typeof to === "number") {
+      navigator.go(to);
+      return;
+    }
+
+    let path = (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.resolveTo)(to, JSON.parse(routePathnamesJson), locationPathname, options.relative === "path"); // If we're operating within a basename, prepend it to the pathname prior
+    // to handing off to history.  If this is a root navigation, then we
+    // navigate to the raw basename which allows the basename to have full
+    // control over the presence of a trailing slash on root links
+
+    if (basename !== "/") {
+      path.pathname = path.pathname === "/" ? basename : (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.joinPaths)([basename, path.pathname]);
+    }
+
+    (!!options.replace ? navigator.replace : navigator.push)(path, options.state, options);
+  }, [basename, navigator, routePathnamesJson, locationPathname]);
+  return navigate;
+}
+const OutletContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createContext(null);
+/**
+ * Returns the context (if provided) for the child route at this level of the route
+ * hierarchy.
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-outlet-context
+ */
+
+function useOutletContext() {
+  return react__WEBPACK_IMPORTED_MODULE_1__.useContext(OutletContext);
+}
+/**
+ * Returns the element for the child route at this level of the route
+ * hierarchy. Used internally by <Outlet> to render child routes.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-outlet
+ */
+
+function useOutlet(context) {
+  let outlet = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext).outlet;
+
+  if (outlet) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(OutletContext.Provider, {
+      value: context
+    }, outlet);
+  }
+
+  return outlet;
+}
+/**
+ * Returns an object of key/value pairs of the dynamic params from the current
+ * URL that were matched by the route path.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-params
+ */
+
+function useParams() {
+  let {
+    matches
+  } = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext);
+  let routeMatch = matches[matches.length - 1];
+  return routeMatch ? routeMatch.params : {};
+}
+/**
+ * Resolves the pathname of the given `to` value against the current location.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-resolved-path
+ */
+
+function useResolvedPath(to, _temp2) {
+  let {
+    relative
+  } = _temp2 === void 0 ? {} : _temp2;
+  let {
+    matches
+  } = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext);
+  let {
+    pathname: locationPathname
+  } = useLocation();
+  let routePathnamesJson = JSON.stringify((0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.UNSAFE_getPathContributingMatches)(matches).map(match => match.pathnameBase));
+  return react__WEBPACK_IMPORTED_MODULE_1__.useMemo(() => (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.resolveTo)(to, JSON.parse(routePathnamesJson), locationPathname, relative === "path"), [to, routePathnamesJson, locationPathname, relative]);
+}
+/**
+ * Returns the element of the route that matched the current location, prepared
+ * with the correct context to render the remainder of the route tree. Route
+ * elements in the tree must render an <Outlet> to render their child route's
+ * element.
+ *
+ * @see https://reactrouter.com/docs/en/v6/hooks/use-routes
+ */
+
+function useRoutes(routes, locationArg) {
+  !useInRouterContext() ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, // TODO: This error is probably because they somehow have 2 versions of the
+  // router loaded. We can help them understand how to avoid that.
+  "useRoutes() may be used only in the context of a <Router> component.") : 0 : void 0;
+  let dataRouterStateContext = react__WEBPACK_IMPORTED_MODULE_1__.useContext(DataRouterStateContext);
+  let {
+    matches: parentMatches
+  } = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext);
+  let routeMatch = parentMatches[parentMatches.length - 1];
+  let parentParams = routeMatch ? routeMatch.params : {};
+  let parentPathname = routeMatch ? routeMatch.pathname : "/";
+  let parentPathnameBase = routeMatch ? routeMatch.pathnameBase : "/";
+  let parentRoute = routeMatch && routeMatch.route;
+
+  if (true) {
+    // You won't get a warning about 2 different <Routes> under a <Route>
+    // without a trailing *, but this is a best-effort warning anyway since we
+    // cannot even give the warning unless they land at the parent route.
+    //
+    // Example:
+    //
+    // <Routes>
+    //   {/* This route path MUST end with /* because otherwise
+    //       it will never match /blog/post/123 */}
+    //   <Route path="blog" element={<Blog />} />
+    //   <Route path="blog/feed" element={<BlogFeed />} />
+    // </Routes>
+    //
+    // function Blog() {
+    //   return (
+    //     <Routes>
+    //       <Route path="post/:id" element={<Post />} />
+    //     </Routes>
+    //   );
+    // }
+    let parentPath = parentRoute && parentRoute.path || "";
+    warningOnce(parentPathname, !parentRoute || parentPath.endsWith("*"), "You rendered descendant <Routes> (or called `useRoutes()`) at " + ("\"" + parentPathname + "\" (under <Route path=\"" + parentPath + "\">) but the ") + "parent route path has no trailing \"*\". This means if you navigate " + "deeper, the parent won't match anymore and therefore the child " + "routes will never render.\n\n" + ("Please change the parent <Route path=\"" + parentPath + "\"> to <Route ") + ("path=\"" + (parentPath === "/" ? "*" : parentPath + "/*") + "\">."));
+  }
+
+  let locationFromContext = useLocation();
+  let location;
+
+  if (locationArg) {
+    var _parsedLocationArg$pa;
+
+    let parsedLocationArg = typeof locationArg === "string" ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.parsePath)(locationArg) : locationArg;
+    !(parentPathnameBase === "/" || ((_parsedLocationArg$pa = parsedLocationArg.pathname) == null ? void 0 : _parsedLocationArg$pa.startsWith(parentPathnameBase))) ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "When overriding the location using `<Routes location>` or `useRoutes(routes, location)`, " + "the location pathname must begin with the portion of the URL pathname that was " + ("matched by all parent routes. The current pathname base is \"" + parentPathnameBase + "\" ") + ("but pathname \"" + parsedLocationArg.pathname + "\" was given in the `location` prop.")) : 0 : void 0;
+    location = parsedLocationArg;
+  } else {
+    location = locationFromContext;
+  }
+
+  let pathname = location.pathname || "/";
+  let remainingPathname = parentPathnameBase === "/" ? pathname : pathname.slice(parentPathnameBase.length) || "/";
+  let matches = (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.matchRoutes)(routes, {
+    pathname: remainingPathname
+  });
+
+  if (true) {
+     true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.warning)(parentRoute || matches != null, "No routes matched location \"" + location.pathname + location.search + location.hash + "\" ") : 0;
+     true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.warning)(matches == null || matches[matches.length - 1].route.element !== undefined, "Matched leaf route at location \"" + location.pathname + location.search + location.hash + "\" does not have an element. " + "This means it will render an <Outlet /> with a null value by default resulting in an \"empty\" page.") : 0;
+  }
+
+  let renderedMatches = _renderMatches(matches && matches.map(match => Object.assign({}, match, {
+    params: Object.assign({}, parentParams, match.params),
+    pathname: (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.joinPaths)([parentPathnameBase, match.pathname]),
+    pathnameBase: match.pathnameBase === "/" ? parentPathnameBase : (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.joinPaths)([parentPathnameBase, match.pathnameBase])
+  })), parentMatches, dataRouterStateContext || undefined); // When a user passes in a `locationArg`, the associated routes need to
+  // be wrapped in a new `LocationContext.Provider` in order for `useLocation`
+  // to use the scoped location instead of the global location.
+
+
+  if (locationArg && renderedMatches) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(LocationContext.Provider, {
+      value: {
+        location: _extends({
+          pathname: "/",
+          search: "",
+          hash: "",
+          state: null,
+          key: "default"
+        }, location),
+        navigationType: _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.Action.Pop
+      }
+    }, renderedMatches);
+  }
+
+  return renderedMatches;
+}
+
+function DefaultErrorElement() {
+  let error = useRouteError();
+  let message = (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.isRouteErrorResponse)(error) ? error.status + " " + error.statusText : error instanceof Error ? error.message : JSON.stringify(error);
+  let stack = error instanceof Error ? error.stack : null;
+  let lightgrey = "rgba(200,200,200, 0.5)";
+  let preStyles = {
+    padding: "0.5rem",
+    backgroundColor: lightgrey
+  };
+  let codeStyles = {
+    padding: "2px 4px",
+    backgroundColor: lightgrey
+  };
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(react__WEBPACK_IMPORTED_MODULE_1__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement("h2", null, "Unhandled Thrown Error!"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement("h3", {
+    style: {
+      fontStyle: "italic"
+    }
+  }, message), stack ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement("pre", {
+    style: preStyles
+  }, stack) : null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement("p", null, "\uD83D\uDCBF Hey developer \uD83D\uDC4B"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement("p", null, "You can provide a way better UX than this when your app throws errors by providing your own\xA0", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement("code", {
+    style: codeStyles
+  }, "errorElement"), " props on\xA0", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement("code", {
+    style: codeStyles
+  }, "<Route>")));
+}
+
+class RenderErrorBoundary extends react__WEBPACK_IMPORTED_MODULE_1__.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      location: props.location,
+      error: props.error
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      error: error
+    };
+  }
+
+  static getDerivedStateFromProps(props, state) {
+    // When we get into an error state, the user will likely click "back" to the
+    // previous page that didn't have an error. Because this wraps the entire
+    // application, that will have no effect--the error page continues to display.
+    // This gives us a mechanism to recover from the error when the location changes.
+    //
+    // Whether we're in an error state or not, we update the location in state
+    // so that when we are in an error state, it gets reset when a new location
+    // comes in and the user recovers from the error.
+    if (state.location !== props.location) {
+      return {
+        error: props.error,
+        location: props.location
+      };
+    } // If we're not changing locations, preserve the location but still surface
+    // any new errors that may come through. We retain the existing error, we do
+    // this because the error provided from the app state may be cleared without
+    // the location changing.
+
+
+    return {
+      error: props.error || state.error,
+      location: state.location
+    };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("React Router caught the following error during render", error, errorInfo);
+  }
+
+  render() {
+    return this.state.error ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(RouteErrorContext.Provider, {
+      value: this.state.error,
+      children: this.props.component
+    }) : this.props.children;
+  }
+
+}
+
+function RenderedRoute(_ref) {
+  let {
+    routeContext,
+    match,
+    children
+  } = _ref;
+  let dataStaticRouterContext = react__WEBPACK_IMPORTED_MODULE_1__.useContext(DataStaticRouterContext); // Track how deep we got in our render pass to emulate SSR componentDidCatch
+  // in a DataStaticRouter
+
+  if (dataStaticRouterContext && match.route.errorElement) {
+    dataStaticRouterContext._deepestRenderedBoundaryId = match.route.id;
+  }
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(RouteContext.Provider, {
+    value: routeContext
+  }, children);
+}
+
+function _renderMatches(matches, parentMatches, dataRouterState) {
+  if (parentMatches === void 0) {
+    parentMatches = [];
+  }
+
+  if (matches == null) {
+    if (dataRouterState != null && dataRouterState.errors) {
+      // Don't bail if we have data router errors so we can render them in the
+      // boundary.  Use the pre-matched (or shimmed) matches
+      matches = dataRouterState.matches;
+    } else {
+      return null;
+    }
+  }
+
+  let renderedMatches = matches; // If we have data errors, trim matches to the highest error boundary
+
+  let errors = dataRouterState == null ? void 0 : dataRouterState.errors;
+
+  if (errors != null) {
+    let errorIndex = renderedMatches.findIndex(m => m.route.id && (errors == null ? void 0 : errors[m.route.id]));
+    !(errorIndex >= 0) ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "Could not find a matching route for the current errors: " + errors) : 0 : void 0;
+    renderedMatches = renderedMatches.slice(0, Math.min(renderedMatches.length, errorIndex + 1));
+  }
+
+  return renderedMatches.reduceRight((outlet, match, index) => {
+    let error = match.route.id ? errors == null ? void 0 : errors[match.route.id] : null; // Only data routers handle errors
+
+    let errorElement = dataRouterState ? match.route.errorElement || /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(DefaultErrorElement, null) : null;
+
+    let getChildren = () => /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(RenderedRoute, {
+      match: match,
+      routeContext: {
+        outlet,
+        matches: parentMatches.concat(renderedMatches.slice(0, index + 1))
+      }
+    }, error ? errorElement : match.route.element !== undefined ? match.route.element : outlet); // Only wrap in an error boundary within data router usages when we have an
+    // errorElement on this route.  Otherwise let it bubble up to an ancestor
+    // errorElement
+
+
+    return dataRouterState && (match.route.errorElement || index === 0) ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(RenderErrorBoundary, {
+      location: dataRouterState.location,
+      component: errorElement,
+      error: error,
+      children: getChildren()
+    }) : getChildren();
+  }, null);
+}
+var DataRouterHook;
+
+(function (DataRouterHook) {
+  DataRouterHook["UseRevalidator"] = "useRevalidator";
+})(DataRouterHook || (DataRouterHook = {}));
+
+var DataRouterStateHook;
+
+(function (DataRouterStateHook) {
+  DataRouterStateHook["UseLoaderData"] = "useLoaderData";
+  DataRouterStateHook["UseActionData"] = "useActionData";
+  DataRouterStateHook["UseRouteError"] = "useRouteError";
+  DataRouterStateHook["UseNavigation"] = "useNavigation";
+  DataRouterStateHook["UseRouteLoaderData"] = "useRouteLoaderData";
+  DataRouterStateHook["UseMatches"] = "useMatches";
+  DataRouterStateHook["UseRevalidator"] = "useRevalidator";
+})(DataRouterStateHook || (DataRouterStateHook = {}));
+
+function getDataRouterConsoleError(hookName) {
+  return hookName + " must be used within a data router.  See https://reactrouter.com/en/main/routers/picking-a-router.";
+}
+
+function useDataRouterContext(hookName) {
+  let ctx = react__WEBPACK_IMPORTED_MODULE_1__.useContext(DataRouterContext);
+  !ctx ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, getDataRouterConsoleError(hookName)) : 0 : void 0;
+  return ctx;
+}
+
+function useDataRouterState(hookName) {
+  let state = react__WEBPACK_IMPORTED_MODULE_1__.useContext(DataRouterStateContext);
+  !state ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, getDataRouterConsoleError(hookName)) : 0 : void 0;
+  return state;
+}
+/**
+ * Returns the current navigation, defaulting to an "idle" navigation when
+ * no navigation is in progress
+ */
+
+
+function useNavigation() {
+  let state = useDataRouterState(DataRouterStateHook.UseNavigation);
+  return state.navigation;
+}
+/**
+ * Returns a revalidate function for manually triggering revalidation, as well
+ * as the current state of any manual revalidations
+ */
+
+function useRevalidator() {
+  let dataRouterContext = useDataRouterContext(DataRouterHook.UseRevalidator);
+  let state = useDataRouterState(DataRouterStateHook.UseRevalidator);
+  return {
+    revalidate: dataRouterContext.router.revalidate,
+    state: state.revalidation
+  };
+}
+/**
+ * Returns the active route matches, useful for accessing loaderData for
+ * parent/child routes or the route "handle" property
+ */
+
+function useMatches() {
+  let {
+    matches,
+    loaderData
+  } = useDataRouterState(DataRouterStateHook.UseMatches);
+  return react__WEBPACK_IMPORTED_MODULE_1__.useMemo(() => matches.map(match => {
+    let {
+      pathname,
+      params
+    } = match; // Note: This structure matches that created by createUseMatchesMatch
+    // in the @remix-run/router , so if you change this please also change
+    // that :)  Eventually we'll DRY this up
+
+    return {
+      id: match.route.id,
+      pathname,
+      params,
+      data: loaderData[match.route.id],
+      handle: match.route.handle
+    };
+  }), [matches, loaderData]);
+}
+/**
+ * Returns the loader data for the nearest ancestor Route loader
+ */
+
+function useLoaderData() {
+  let state = useDataRouterState(DataRouterStateHook.UseLoaderData);
+  let route = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext);
+  !route ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "useLoaderData must be used inside a RouteContext") : 0 : void 0;
+  let thisRoute = route.matches[route.matches.length - 1];
+  !thisRoute.route.id ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "useLoaderData can only be used on routes that contain a unique \"id\"") : 0 : void 0;
+  return state.loaderData[thisRoute.route.id];
+}
+/**
+ * Returns the loaderData for the given routeId
+ */
+
+function useRouteLoaderData(routeId) {
+  let state = useDataRouterState(DataRouterStateHook.UseRouteLoaderData);
+  return state.loaderData[routeId];
+}
+/**
+ * Returns the action data for the nearest ancestor Route action
+ */
+
+function useActionData() {
+  let state = useDataRouterState(DataRouterStateHook.UseActionData);
+  let route = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext);
+  !route ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "useActionData must be used inside a RouteContext") : 0 : void 0;
+  return Object.values((state == null ? void 0 : state.actionData) || {})[0];
+}
+/**
+ * Returns the nearest ancestor Route error, which could be a loader/action
+ * error or a render error.  This is intended to be called from your
+ * errorElement to display a proper error message.
+ */
+
+function useRouteError() {
+  var _state$errors;
+
+  let error = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteErrorContext);
+  let state = useDataRouterState(DataRouterStateHook.UseRouteError);
+  let route = react__WEBPACK_IMPORTED_MODULE_1__.useContext(RouteContext);
+  let thisRoute = route.matches[route.matches.length - 1]; // If this was a render error, we put it in a RouteError context inside
+  // of RenderErrorBoundary
+
+  if (error) {
+    return error;
+  }
+
+  !route ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "useRouteError must be used inside a RouteContext") : 0 : void 0;
+  !thisRoute.route.id ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "useRouteError can only be used on routes that contain a unique \"id\"") : 0 : void 0; // Otherwise look for errors from our data router state
+
+  return (_state$errors = state.errors) == null ? void 0 : _state$errors[thisRoute.route.id];
+}
+/**
+ * Returns the happy-path data from the nearest ancestor <Await /> value
+ */
+
+function useAsyncValue() {
+  let value = react__WEBPACK_IMPORTED_MODULE_1__.useContext(AwaitContext);
+  return value == null ? void 0 : value._data;
+}
+/**
+ * Returns the error from the nearest ancestor <Await /> value
+ */
+
+function useAsyncError() {
+  let value = react__WEBPACK_IMPORTED_MODULE_1__.useContext(AwaitContext);
+  return value == null ? void 0 : value._error;
+}
+const alreadyWarned = {};
+
+function warningOnce(key, cond, message) {
+  if (!cond && !alreadyWarned[key]) {
+    alreadyWarned[key] = true;
+     true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.warning)(false, message) : 0;
+  }
+}
+
+/**
+ * Given a Remix Router instance, render the appropriate UI
+ */
+function RouterProvider(_ref) {
+  let {
+    fallbackElement,
+    router
+  } = _ref;
+  // Sync router state to our component state to force re-renders
+  let state = useSyncExternalStore(router.subscribe, () => router.state, // We have to provide this so React@18 doesn't complain during hydration,
+  // but we pass our serialized hydration data into the router so state here
+  // is already synced with what the server saw
+  () => router.state);
+  let navigator = react__WEBPACK_IMPORTED_MODULE_1__.useMemo(() => {
+    return {
+      createHref: router.createHref,
+      go: n => router.navigate(n),
+      push: (to, state, opts) => router.navigate(to, {
+        state,
+        preventScrollReset: opts == null ? void 0 : opts.preventScrollReset
+      }),
+      replace: (to, state, opts) => router.navigate(to, {
+        replace: true,
+        state,
+        preventScrollReset: opts == null ? void 0 : opts.preventScrollReset
+      })
+    };
+  }, [router]);
+  let basename = router.basename || "/";
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(DataRouterContext.Provider, {
+    value: {
+      router,
+      navigator,
+      static: false,
+      // Do we need this?
+      basename
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(DataRouterStateContext.Provider, {
+    value: state
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(Router, {
+    basename: router.basename,
+    location: router.state.location,
+    navigationType: router.state.historyAction,
+    navigator: navigator
+  }, router.state.initialized ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(Routes, null) : fallbackElement)));
+}
+
+/**
+ * A <Router> that stores all entries in memory.
+ *
+ * @see https://reactrouter.com/docs/en/v6/routers/memory-router
+ */
+function MemoryRouter(_ref2) {
+  let {
+    basename,
+    children,
+    initialEntries,
+    initialIndex
+  } = _ref2;
+  let historyRef = react__WEBPACK_IMPORTED_MODULE_1__.useRef();
+
+  if (historyRef.current == null) {
+    historyRef.current = (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.createMemoryHistory)({
+      initialEntries,
+      initialIndex,
+      v5Compat: true
+    });
+  }
+
+  let history = historyRef.current;
+  let [state, setState] = react__WEBPACK_IMPORTED_MODULE_1__.useState({
+    action: history.action,
+    location: history.location
+  });
+  react__WEBPACK_IMPORTED_MODULE_1__.useLayoutEffect(() => history.listen(setState), [history]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(Router, {
+    basename: basename,
+    children: children,
+    location: state.location,
+    navigationType: state.action,
+    navigator: history
+  });
+}
+
+/**
+ * Changes the current location.
+ *
+ * Note: This API is mostly useful in React.Component subclasses that are not
+ * able to use hooks. In functional components, we recommend you use the
+ * `useNavigate` hook instead.
+ *
+ * @see https://reactrouter.com/docs/en/v6/components/navigate
+ */
+function Navigate(_ref3) {
+  let {
+    to,
+    replace,
+    state,
+    relative
+  } = _ref3;
+  !useInRouterContext() ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, // TODO: This error is probably because they somehow have 2 versions of
+  // the router loaded. We can help them understand how to avoid that.
+  "<Navigate> may be used only in the context of a <Router> component.") : 0 : void 0;
+   true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.warning)(!react__WEBPACK_IMPORTED_MODULE_1__.useContext(NavigationContext).static, "<Navigate> must not be used on the initial render in a <StaticRouter>. " + "This is a no-op, but you should modify your code so the <Navigate> is " + "only ever rendered in response to some user interaction or state change.") : 0;
+  let dataRouterState = react__WEBPACK_IMPORTED_MODULE_1__.useContext(DataRouterStateContext);
+  let navigate = useNavigate();
+  react__WEBPACK_IMPORTED_MODULE_1__.useEffect(() => {
+    // Avoid kicking off multiple navigations if we're in the middle of a
+    // data-router navigation, since components get re-rendered when we enter
+    // a submitting/loading state
+    if (dataRouterState && dataRouterState.navigation.state !== "idle") {
+      return;
+    }
+
+    navigate(to, {
+      replace,
+      state,
+      relative
+    });
+  });
+  return null;
+}
+
+/**
+ * Renders the child route's element, if there is one.
+ *
+ * @see https://reactrouter.com/docs/en/v6/components/outlet
+ */
+function Outlet(props) {
+  return useOutlet(props.context);
+}
+
+/**
+ * Declares an element that should be rendered at a certain URL path.
+ *
+ * @see https://reactrouter.com/docs/en/v6/components/route
+ */
+function Route(_props) {
+   true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "A <Route> is only ever to be used as the child of <Routes> element, " + "never rendered directly. Please wrap your <Route> in a <Routes>.") : 0 ;
+}
+
+/**
+ * Provides location context for the rest of the app.
+ *
+ * Note: You usually won't render a <Router> directly. Instead, you'll render a
+ * router that is more specific to your environment such as a <BrowserRouter>
+ * in web browsers or a <StaticRouter> for server rendering.
+ *
+ * @see https://reactrouter.com/docs/en/v6/routers/router
+ */
+function Router(_ref4) {
+  let {
+    basename: basenameProp = "/",
+    children = null,
+    location: locationProp,
+    navigationType = _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.Action.Pop,
+    navigator,
+    static: staticProp = false
+  } = _ref4;
+  !!useInRouterContext() ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "You cannot render a <Router> inside another <Router>." + " You should never have more than one in your app.") : 0 : void 0; // Preserve trailing slashes on basename, so we can let the user control
+  // the enforcement of trailing slashes throughout the app
+
+  let basename = basenameProp.replace(/^\/*/, "/");
+  let navigationContext = react__WEBPACK_IMPORTED_MODULE_1__.useMemo(() => ({
+    basename,
+    navigator,
+    static: staticProp
+  }), [basename, navigator, staticProp]);
+
+  if (typeof locationProp === "string") {
+    locationProp = (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.parsePath)(locationProp);
+  }
+
+  let {
+    pathname = "/",
+    search = "",
+    hash = "",
+    state = null,
+    key = "default"
+  } = locationProp;
+  let location = react__WEBPACK_IMPORTED_MODULE_1__.useMemo(() => {
+    let trailingPathname = (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.stripBasename)(pathname, basename);
+
+    if (trailingPathname == null) {
+      return null;
+    }
+
+    return {
+      pathname: trailingPathname,
+      search,
+      hash,
+      state,
+      key
+    };
+  }, [basename, pathname, search, hash, state, key]);
+   true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.warning)(location != null, "<Router basename=\"" + basename + "\"> is not able to match the URL " + ("\"" + pathname + search + hash + "\" because it does not start with the ") + "basename, so the <Router> won't render anything.") : 0;
+
+  if (location == null) {
+    return null;
+  }
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(NavigationContext.Provider, {
+    value: navigationContext
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(LocationContext.Provider, {
+    children: children,
+    value: {
+      location,
+      navigationType
+    }
+  }));
+}
+
+/**
+ * A container for a nested tree of <Route> elements that renders the branch
+ * that best matches the current location.
+ *
+ * @see https://reactrouter.com/docs/en/v6/components/routes
+ */
+function Routes(_ref5) {
+  let {
+    children,
+    location
+  } = _ref5;
+  let dataRouterContext = react__WEBPACK_IMPORTED_MODULE_1__.useContext(DataRouterContext); // When in a DataRouterContext _without_ children, we use the router routes
+  // directly.  If we have children, then we're in a descendant tree and we
+  // need to use child routes.
+
+  let routes = dataRouterContext && !children ? dataRouterContext.router.routes : createRoutesFromChildren(children);
+  return useRoutes(routes, location);
+}
+
+/**
+ * Component to use for rendering lazily loaded data from returning defer()
+ * in a loader function
+ */
+function Await(_ref6) {
+  let {
+    children,
+    errorElement,
+    resolve
+  } = _ref6;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(AwaitErrorBoundary, {
+    resolve: resolve,
+    errorElement: errorElement
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(ResolveAwait, null, children));
+}
+var AwaitRenderStatus;
+
+(function (AwaitRenderStatus) {
+  AwaitRenderStatus[AwaitRenderStatus["pending"] = 0] = "pending";
+  AwaitRenderStatus[AwaitRenderStatus["success"] = 1] = "success";
+  AwaitRenderStatus[AwaitRenderStatus["error"] = 2] = "error";
+})(AwaitRenderStatus || (AwaitRenderStatus = {}));
+
+const neverSettledPromise = new Promise(() => {});
+
+class AwaitErrorBoundary extends react__WEBPACK_IMPORTED_MODULE_1__.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      error: null
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      error
+    };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("<Await> caught the following error during render", error, errorInfo);
+  }
+
+  render() {
+    let {
+      children,
+      errorElement,
+      resolve
+    } = this.props;
+    let promise = null;
+    let status = AwaitRenderStatus.pending;
+
+    if (!(resolve instanceof Promise)) {
+      // Didn't get a promise - provide as a resolved promise
+      status = AwaitRenderStatus.success;
+      promise = Promise.resolve();
+      Object.defineProperty(promise, "_tracked", {
+        get: () => true
+      });
+      Object.defineProperty(promise, "_data", {
+        get: () => resolve
+      });
+    } else if (this.state.error) {
+      // Caught a render error, provide it as a rejected promise
+      status = AwaitRenderStatus.error;
+      let renderError = this.state.error;
+      promise = Promise.reject().catch(() => {}); // Avoid unhandled rejection warnings
+
+      Object.defineProperty(promise, "_tracked", {
+        get: () => true
+      });
+      Object.defineProperty(promise, "_error", {
+        get: () => renderError
+      });
+    } else if (resolve._tracked) {
+      // Already tracked promise - check contents
+      promise = resolve;
+      status = promise._error !== undefined ? AwaitRenderStatus.error : promise._data !== undefined ? AwaitRenderStatus.success : AwaitRenderStatus.pending;
+    } else {
+      // Raw (untracked) promise - track it
+      status = AwaitRenderStatus.pending;
+      Object.defineProperty(resolve, "_tracked", {
+        get: () => true
+      });
+      promise = resolve.then(data => Object.defineProperty(resolve, "_data", {
+        get: () => data
+      }), error => Object.defineProperty(resolve, "_error", {
+        get: () => error
+      }));
+    }
+
+    if (status === AwaitRenderStatus.error && promise._error instanceof _remix_run_router__WEBPACK_IMPORTED_MODULE_0__.AbortedDeferredError) {
+      // Freeze the UI by throwing a never resolved promise
+      throw neverSettledPromise;
+    }
+
+    if (status === AwaitRenderStatus.error && !errorElement) {
+      // No errorElement, throw to the nearest route-level error boundary
+      throw promise._error;
+    }
+
+    if (status === AwaitRenderStatus.error) {
+      // Render via our errorElement
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(AwaitContext.Provider, {
+        value: promise,
+        children: errorElement
+      });
+    }
+
+    if (status === AwaitRenderStatus.success) {
+      // Render children with resolved value
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(AwaitContext.Provider, {
+        value: promise,
+        children: children
+      });
+    } // Throw to the suspense boundary
+
+
+    throw promise;
+  }
+
+}
+/**
+ * @private
+ * Indirection to leverage useAsyncValue for a render-prop API on <Await>
+ */
+
+
+function ResolveAwait(_ref7) {
+  let {
+    children
+  } = _ref7;
+  let data = useAsyncValue();
+
+  if (typeof children === "function") {
+    return children(data);
+  }
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.createElement(react__WEBPACK_IMPORTED_MODULE_1__.Fragment, null, children);
+} ///////////////////////////////////////////////////////////////////////////////
+// UTILS
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Creates a route config from a React "children" object, which is usually
+ * either a `<Route>` element or an array of them. Used internally by
+ * `<Routes>` to create a route config from its children.
+ *
+ * @see https://reactrouter.com/docs/en/v6/utils/create-routes-from-children
+ */
+
+
+function createRoutesFromChildren(children, parentPath) {
+  if (parentPath === void 0) {
+    parentPath = [];
+  }
+
+  let routes = [];
+  react__WEBPACK_IMPORTED_MODULE_1__.Children.forEach(children, (element, index) => {
+    if (! /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1__.isValidElement(element)) {
+      // Ignore non-elements. This allows people to more easily inline
+      // conditionals in their route config.
+      return;
+    }
+
+    if (element.type === react__WEBPACK_IMPORTED_MODULE_1__.Fragment) {
+      // Transparently support React.Fragment and its children.
+      routes.push.apply(routes, createRoutesFromChildren(element.props.children, parentPath));
+      return;
+    }
+
+    !(element.type === Route) ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "[" + (typeof element.type === "string" ? element.type : element.type.name) + "] is not a <Route> component. All component children of <Routes> must be a <Route> or <React.Fragment>") : 0 : void 0;
+    !(!element.props.index || !element.props.children) ?  true ? (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.invariant)(false, "An index route cannot have child routes.") : 0 : void 0;
+    let treePath = [...parentPath, index];
+    let route = {
+      id: element.props.id || treePath.join("-"),
+      caseSensitive: element.props.caseSensitive,
+      element: element.props.element,
+      index: element.props.index,
+      path: element.props.path,
+      loader: element.props.loader,
+      action: element.props.action,
+      errorElement: element.props.errorElement,
+      hasErrorBoundary: element.props.errorElement != null,
+      shouldRevalidate: element.props.shouldRevalidate,
+      handle: element.props.handle
+    };
+
+    if (element.props.children) {
+      route.children = createRoutesFromChildren(element.props.children, treePath);
+    }
+
+    routes.push(route);
+  });
+  return routes;
+}
+/**
+ * Renders the result of `matchRoutes()` into a React element.
+ */
+
+function renderMatches(matches) {
+  return _renderMatches(matches);
+}
+/**
+ * @private
+ * Walk the route tree and add hasErrorBoundary if it's not provided, so that
+ * users providing manual route arrays can just specify errorElement
+ */
+
+function enhanceManualRouteObjects(routes) {
+  return routes.map(route => {
+    let routeClone = _extends({}, route);
+
+    if (routeClone.hasErrorBoundary == null) {
+      routeClone.hasErrorBoundary = routeClone.errorElement != null;
+    }
+
+    if (routeClone.children) {
+      routeClone.children = enhanceManualRouteObjects(routeClone.children);
+    }
+
+    return routeClone;
+  });
+}
+
+function createMemoryRouter(routes, opts) {
+  return (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.createRouter)({
+    basename: opts == null ? void 0 : opts.basename,
+    history: (0,_remix_run_router__WEBPACK_IMPORTED_MODULE_0__.createMemoryHistory)({
+      initialEntries: opts == null ? void 0 : opts.initialEntries,
+      initialIndex: opts == null ? void 0 : opts.initialIndex
+    }),
+    hydrationData: opts == null ? void 0 : opts.hydrationData,
+    routes: enhanceManualRouteObjects(routes)
+  }).initialize();
+} ///////////////////////////////////////////////////////////////////////////////
+
+
+//# sourceMappingURL=index.js.map
+
 
 /***/ }),
 
@@ -39844,6 +51645,36 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 /***/ }),
 
+/***/ "./resources/js/components/filter/Filter.css":
+/*!***************************************************!*\
+  !*** ./resources/js/components/filter/Filter.css ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Filter_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!../../../../node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./Filter.css */ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/filter/Filter.css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Filter_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Filter_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
 /***/ "./resources/js/components/footer/Footer.css":
 /*!***************************************************!*\
   !*** ./resources/js/components/footer/Footer.css ***!
@@ -39901,6 +51732,156 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Header_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/paginate/Paginate.css":
+/*!*******************************************************!*\
+  !*** ./resources/js/components/paginate/Paginate.css ***!
+  \*******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Paginate_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!../../../../node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./Paginate.css */ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/paginate/Paginate.css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Paginate_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Paginate_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/shopTitle/ShopTitle.css":
+/*!*********************************************************!*\
+  !*** ./resources/js/components/shopTitle/ShopTitle.css ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_ShopTitle_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!../../../../node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./ShopTitle.css */ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/shopTitle/ShopTitle.css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_ShopTitle_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_ShopTitle_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/wrapper/Wrapper.css":
+/*!*****************************************************!*\
+  !*** ./resources/js/components/wrapper/Wrapper.css ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Wrapper_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!../../../../node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./Wrapper.css */ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/Wrapper.css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Wrapper_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_Wrapper_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/wrapper/WrapperItems.css":
+/*!**********************************************************!*\
+  !*** ./resources/js/components/wrapper/WrapperItems.css ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_WrapperItems_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!../../../../node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./WrapperItems.css */ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/WrapperItems.css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_WrapperItems_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_WrapperItems_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/wrapper/WrapperTitle.css":
+/*!**********************************************************!*\
+  !*** ./resources/js/components/wrapper/WrapperTitle.css ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_WrapperTitle_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!../../../../node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./WrapperTitle.css */ "./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[6].oneOf[1].use[2]!./resources/js/components/wrapper/WrapperTitle.css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_WrapperTitle_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_1_node_modules_postcss_loader_dist_cjs_js_ruleSet_1_rules_6_oneOf_1_use_2_WrapperTitle_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -55297,6 +67278,36 @@ var icons = {
 /******/ 				() => (module);
 /******/ 			__webpack_require__.d(getter, { a: getter });
 /******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/create fake namespace object */
+/******/ 	(() => {
+/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
+/******/ 		var leafPrototypes;
+/******/ 		// create a fake namespace object
+/******/ 		// mode & 1: value is a module id, require it
+/******/ 		// mode & 2: merge all properties of value into the ns
+/******/ 		// mode & 4: return value when already ns object
+/******/ 		// mode & 16: return value when it's Promise-like
+/******/ 		// mode & 8|1: behave like require
+/******/ 		__webpack_require__.t = function(value, mode) {
+/******/ 			if(mode & 1) value = this(value);
+/******/ 			if(mode & 8) return value;
+/******/ 			if(typeof value === 'object' && value) {
+/******/ 				if((mode & 4) && value.__esModule) return value;
+/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
+/******/ 			}
+/******/ 			var ns = Object.create(null);
+/******/ 			__webpack_require__.r(ns);
+/******/ 			var def = {};
+/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
+/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
+/******/ 			}
+/******/ 			def['default'] = () => (value);
+/******/ 			__webpack_require__.d(ns, def);
+/******/ 			return ns;
 /******/ 		};
 /******/ 	})();
 /******/ 	

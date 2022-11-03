@@ -1,0 +1,14 @@
+.card-filter {
+    width: '15rem';
+    margin-top: 10px;
+}
+
+.card-filter .card-body{
+    padding: 10px;
+}
+
+.card-filter .card-body .card-text {
+    padding: 10px;
+    margin-top: 0;
+    margin-bottom: 0;
+}

@@ -1,0 +1,21 @@
+.wrapper-title {
+    display: inline;
+}
+
+.wrapper-title p {
+    float: left;
+}
+
+.wrapper-title .wrapper-dropdown .dropdown-sort{
+    float:left;
+}
+
+.wrapper-title .wrapper-dropdown .dropdown-show{
+    float: right;
+    margin-left: 10px;
+}
+
+.wrapper-title .wrapper-dropdown {
+    display: inline;
+    float: right;
+}

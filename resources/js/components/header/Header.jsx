@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navbar } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import imgLogo from "../../../assets/bookworm_icon.svg";
 import "./Header.css";
 
@@ -18,16 +19,16 @@ const Header = () => {
             <div className="collapse navbar-collapse" id="navbarBookworm">
                 <ul className="navbar-nav ml-auto">
                     <li className="nav-item active">
-                        <a className="nav-link" href="#">Home</a>
+                        <Link className="nav-link" to="/">Home</Link>
                     </li>
                     <li className="nav-item">
-                        <a className="nav-link" href="#">Shop</a>
+                        <Link className="nav-link" to="/shop">Shop</Link>
                     </li>
                     <li className="nav-item">
-                        <a className="nav-link" href="#">About</a>
+                        <Link className="nav-link" to="#">About</Link>
                     </li>
                     <li className="nav-item">
-                        <a className="nav-link" href="#">Cart (<span>0</span>) </a>
+                        <Link className="nav-link" to="#">Cart (<span>0</span>) </Link>
                     </li>
                 </ul>
             </div>
