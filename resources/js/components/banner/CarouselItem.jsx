@@ -3,6 +3,7 @@ import imgBook from "../../../assets/bookcover/book1.jpg";
 import { Carousel, Col, Row , Card, Button} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {faCaretLeft, faCaretRight} from '@fortawesome/free-solid-svg-icons'
+import Item from '../item/Item';
 
 const CarouselItem = () => {
   return (
@@ -31,58 +32,18 @@ const CarouselItem = () => {
       <Carousel.Item>
       <Row>
       <Col sm={6} md={3}>
-        <Card style={{ width: 'auto' }}>
-        <Card.Img variant="top" src={imgBook} />
-        <Card.Body>
-            <Card.Title>Card Title</Card.Title>
-            <Card.Text>
-            Some quick example text to build on the card title and make up the
-            bulk of the card's content.
-            </Card.Text>
-            <Card.Text>Price</Card.Text>
-        </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       
       <Col sm={6} md={3}>
-      <Card style={{ width: 'auto' }}>
-        <Card.Img variant="top" src={imgBook} />
-        <Card.Body>
-            <Card.Title>Card Title</Card.Title>
-            <Card.Text>
-            Some quick example text to build on the card title and make up the
-            bulk of the card's content.
-            </Card.Text>
-            <Card.Text>Price</Card.Text>
-        </Card.Body>
-        </Card>
+        <Item/>
       </Col>
 
       <Col sm={6} md={3}>
-      <Card style={{ width: 'auto' }}>
-        <Card.Img variant="top" src={imgBook} />
-        <Card.Body>
-            <Card.Title>Card Title</Card.Title>
-            <Card.Text>
-            Some quick example text to build on the card title and make up the
-            bulk of the card's content.
-            </Card.Text>
-            <Card.Text>Price</Card.Text>
-        </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       <Col sm={6} md={3}>
-        <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       </Row>
         
@@ -91,56 +52,16 @@ const CarouselItem = () => {
       <Carousel.Item>
       <Row>
       <Col sm={6} md={3}>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       <Col sm={6} md={3}>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       <Col sm={6} md={3}>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       <Col sm={6} md={3}>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       </Row>
 
@@ -149,57 +70,17 @@ const CarouselItem = () => {
       <Carousel.Item>
       <Row>
       <Col>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       
       <Col>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       <Col>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       <Col>
-      <Card style={{ width: 'auto' }}>
-            <Card.Img variant="top" src={imgBook} />
-            <Card.Body>
-                <Card.Title>Card Title</Card.Title>
-                <Card.Text>
-                Some quick example text to build on the card title and make up the
-                bulk of the card's content.
-                </Card.Text>
-                <Card.Text>Price</Card.Text>
-            </Card.Body>
-        </Card>
+        <Item/>
       </Col>
       </Row>
       </Carousel.Item>

@@ -1,0 +1,19 @@
+.cart-totals {
+    border: 3px solid rgb(234, 226, 226);
+}
+
+.cart-totals .cart-title {
+    text-align: center;
+    padding: 6px;
+    border-bottom: 3px solid rgb(234, 226, 226);
+}
+
+.cart-totals .cart-content {
+    text-align: center;
+    padding: 40px;
+}
+
+.cart-content button {
+    margin-top: 20px;
+    padding: 7px 70px 7px 70px;
+}

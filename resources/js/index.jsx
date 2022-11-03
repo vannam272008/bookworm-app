@@ -1,21 +1,25 @@
 import React from 'react'
-import Footer from './components/footer/Footer'
-import Header from './components/header/Header'
 import HomePage from './pages/HomePage'
 import ShopPage from './pages/ShopPage'
+import AboutPage from './pages/AboutPage'
+
 import {
     Routes,
     Route,
   } from "react-router-dom";
+import CartPage from './pages/CartPage';
+import DetailPage from './pages/DetailPage';
+
 
 
 const App = () => {
   return (
     <Routes>
-      <Route path="/" element={<ShopPage />}/>
+      <Route path="/" element={<HomePage />}/>
       <Route path="/shop" element={<ShopPage />}/>
-      {/* <Route path="/about" element={<About />}/>
-      <Route path="/cart" element={<Cart />}/> */}
+      <Route path="/about" element={<AboutPage />}/>
+      <Route path="/cart" element={<CartPage />}/>
+      <Route path="/detail" element={<DetailPage/>}/>
     </Routes>
   )
 }

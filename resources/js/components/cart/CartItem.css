@@ -1,0 +1,21 @@
+img {
+    padding: 10px;
+}
+
+img {
+    width: 120px;
+    height: 160px;
+    display: inline;
+    float: left;
+}
+
+.content {
+    display: inline;
+    float: left;
+    padding-left: 10px;
+}
+
+.link-item {
+    text-decoration: none;
+    color: black;
+}
