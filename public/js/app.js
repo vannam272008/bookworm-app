@@ -8720,7 +8720,7 @@ var Header = function Header() {
       className: "nav-title",
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"], {
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"].Link, {
-          href: "/home",
+          href: "/",
           children: "Home"
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_5__["default"].Link, {
           href: "/shop",
@@ -8805,11 +8805,19 @@ var Item = function Item() {
         src: "./images/bookcover/book1.jpg"
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"].Body, {
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"].Title, {
-          children: "Card Title"
+          children: "Book Title"
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"].Text, {
-          children: "Some quick example text to build on the card title and make up the bulk of the card's content."
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"].Text, {
-          children: "Price"
+          className: "card-text",
+          children: "Author name"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_bootstrap__WEBPACK_IMPORTED_MODULE_4__["default"].Text, {
+          className: "card-text",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+            children: "OriginalPrice"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("b", {
+              children: "Price"
+            })
+          })]
         })]
       })]
     })
@@ -9772,7 +9780,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, ".feature-select {\r\n    margin-top: 80px;\r\n}\r\n\r\n.feature-select .btn-featured-books {\r\n    text-align: center;\r\n}\r\n\r\n.feature-select .card-items {\r\n    padding: 20px 115px 20px 115px;\r\n    margin-top: 10px;\r\n    border: 1px solid black;\r\n}\r\n\r\n.feature-select .popular {\r\n    padding-left: 20px;\r\n    padding-right: 20px;\r\n}\r\n\r\n.feature-select .row-card-items{\r\n    margin-top: 20px;\r\n}\r\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\r\n.feature-select .btn-featured-books {\r\n    text-align: center;\r\n}\r\n\r\n.feature-select .card-items {\r\n    padding: 20px 115px 20px 115px;\r\n    margin-top: 10px;\r\n    border: 1px solid black;\r\n}\r\n\r\n.feature-select .popular {\r\n    padding-left: 20px;\r\n    padding-right: 20px;\r\n}\r\n\r\n.feature-select .row-card-items{\r\n    margin-top: 20px;\r\n}\r\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -9868,7 +9876,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, ".link-item {\r\n    text-decoration: none;\r\n    color: black;\r\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, ".link-item {\r\n    text-decoration: none;\r\n    color: black;\r\n}\r\n\r\n.card-text {\r\n    font-size: 0.9rem;\r\n}\r\n\r\n.card-text span {\r\n    text-decoration: line-through;\r\n    font-size: 0.8rem;\r\n    margin-right: 3px;\r\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 

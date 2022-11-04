@@ -2,3 +2,13 @@
     text-decoration: none;
     color: black;
 }
+
+.card-text {
+    font-size: 0.9rem;
+}
+
+.card-text span {
+    text-decoration: line-through;
+    font-size: 0.8rem;
+    margin-right: 3px;
+}

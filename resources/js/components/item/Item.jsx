@@ -9,12 +9,14 @@ const Item = () => {
       <Card style={{ width: 'auto' }} >
         <Card.Img variant="top" src="./images/bookcover/book1.jpg" />
         <Card.Body>
-            <Card.Title>Card Title</Card.Title>
-            <Card.Text>
-            Some quick example text to build on the card title and make up the
-            bulk of the card's content.
+            <Card.Title>Book Title</Card.Title>
+            <Card.Text className='card-text'>
+            Author name
             </Card.Text>
-            <Card.Text>Price</Card.Text>
+            <Card.Text className='card-text'>
+            <span>OriginalPrice</span>
+            <a><b>Price</b></a>
+            </Card.Text>
         </Card.Body>
       </Card>
     </Link>
