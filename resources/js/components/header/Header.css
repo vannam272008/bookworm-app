@@ -1,4 +1,29 @@
-header nav.navbar {
+.navbar-header {
+    overflow: hidden;
+    z-index: 10000000000;
+    width: 100%;
+}
+
+.nav-title {
+    justify-content: end;
+    margin-right: 120px;
+}
+
+.navbar-brand {
+    display: flex;
+    flex-direction: row;
+    margin-left: 10px;
+}
+
+.navbar-brand img {
+    padding-bottom: 5px;
+}
+
+.navbar-brand b {
+    margin-left: 5px;
+}
+
+/* header nav.navbar {
     overflow: hidden;
     position: fixed;
     z-index: 10000000000;
@@ -41,4 +66,4 @@ div.banner #carouselIndexIndicators .carousel-control-next {
 
 div.banner #carouselIndexIndicators .carousel-inner .carousel-item img {
     height: 27rem;
-}
+} */

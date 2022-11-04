@@ -7,11 +7,12 @@ import { Button } from 'react-bootstrap'
 const QuantityOrder = () => {
   return (
     <div className='order'>
-    <div className='order-price'>
-        <span>$49.99</span>
-        <a><b> $29.99</b></a>
-    </div>
-        <hr/>
+        <div className='order-price'>
+            <span>$49.99</span>
+            <a><b> $29.99</b></a>
+            <hr/>
+        </div>
+        
         <div className='order-quantity'>
             <a>Quantity</a>
             <div className='quantity'>
@@ -31,8 +32,10 @@ const QuantityOrder = () => {
                     />
                 </button>
             </div>
-
+            <div className='order-add'>
             <Button className='btn-add'><b>Add to Cart</b></Button>
+            </div>
+            
         </div>
         
     </div>

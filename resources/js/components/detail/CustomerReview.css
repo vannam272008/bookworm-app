@@ -1,0 +1,42 @@
+.customer-review {
+    border: 3px solid rgb(234, 226, 226);
+    padding: 20px;
+    background-color: rgb(250, 251, 252);
+}
+
+.title-review {
+    display: inline;
+    margin-top: 10px;
+}
+
+.title-review h4 {
+    float: left;
+}
+
+.title-review p {
+    padding-top: 5px;
+}
+
+
+
+.avg-star {
+    margin-right: 10px;
+    font-size: 1.5rem;
+}
+
+.avg-star #avg-star-count {
+    margin-right: 20px;
+    
+}
+
+.list-star {
+    font-size: 0.9rem;
+    text-decoration:underline;
+}
+
+.total-star {
+    display: inline;
+    float: left;
+    margin-right: 10px;
+    text-decoration:underline;
+}

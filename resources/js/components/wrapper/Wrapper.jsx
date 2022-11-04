@@ -1,6 +1,4 @@
 import React, { Fragment } from 'react'
-import { Container } from 'react-bootstrap'
-import ShopTitle from '../shopTitle/ShopTitle'
 import WrapperItems from './WrapperItems'
 import WrapperTitle from './WrapperTitle'
 import "./Wrapper.css"

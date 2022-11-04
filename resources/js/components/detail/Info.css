@@ -1,21 +1,27 @@
+.container {
+    padding: 0;
+}
+
 .row-book-detail {
     border: 3px solid rgb(234, 226, 226);
     margin-left: 0.5px;
+    height: 400px;
+    margin-bottom: 10px;
 }
 
 .col-img {
     padding: 0;
+    display: inline;
+    float:left;
+    text-align: right;
+}
+
+.col-img p {
+    padding-right: 15px;
 }
 
 .col-img img {
+    margin-right: 15px;
     height: 220px;
     width: 200px;
-}
-
-.col-img .col-span {
-    padding-right: 10px;
-    font-size: 0.8rem;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    float: right;
 }

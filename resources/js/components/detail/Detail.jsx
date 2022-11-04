@@ -1,8 +1,11 @@
 import React from 'react'
 import { Col, Container, Row } from 'react-bootstrap'
+import CustomerReview from './CustomerReview'
 import "./Detail.css"
 import Info from './Info'
+import PostReview from './PostReview'
 import QuantityOrder from './QuantityOrder'
+import Paginate from "../paginate/Paginate"
 
 const Detail = () => {
   return (
@@ -12,19 +15,15 @@ const Detail = () => {
         <Row>
             <Col md={8}>
                 <Info/>
+                <CustomerReview/>
+                <Paginate/>
             </Col>
             <Col md={4}>
                 <QuantityOrder/>
+                <PostReview/>
             </Col>
         </Row>
-        <Row>
-          <Col md={8}>
-              <Info/>
-          </Col>
-          <Col md={4}>
-              <QuantityOrder/>
-          </Col>
-        </Row>
+          
     </Container>
   )
 }

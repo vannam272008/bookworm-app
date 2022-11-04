@@ -1,0 +1,35 @@
+.post-review {
+    margin-top: 100px;
+    border: 3px solid rgb(234, 226, 226);
+}
+
+.write-review {
+    padding-left: 10px;
+    background-color: rgb(208, 224, 224);
+}
+
+.post-review h5 {
+    padding-top: 15px;
+    margin-top: 0;
+}
+
+.post-review hr {
+    border: 3px solid rgb(234, 226, 226);
+}
+
+.form-review {
+    font-size: 0.9rem;
+    padding: 10px;
+}
+.submit-review {
+    text-align: center;
+}
+
+.btn-submit {
+    border: none;
+    color: black;
+    padding: 6px 65px 7px 65px;
+    margin-top: 30px;
+    /* margin-left: 10px; */
+    background: rgb(217, 226, 226);
+}

@@ -4,7 +4,7 @@ import './Paginate.css'
 
 const Paginate = () => {
   return (
-    <Pagination className='paginate '>
+    <Pagination className='paginate'>
       <Pagination.First />
       <Pagination.Prev />
       <Pagination.Item>{1}</Pagination.Item>

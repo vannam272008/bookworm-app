@@ -1,0 +1,22 @@
+.dropdown-title {
+    display: inline;
+    
+}
+
+.dropdown-title p {
+    float: left;
+}
+
+.dropdown-title .dropdown .dropdown-sort{
+    float:left;
+}
+
+.dropdown-title .dropdown .dropdown-show{
+    float: right;
+    margin-left: 10px;
+}
+
+.dropdown-title .dropdown {
+    display: inline;
+    float: right;
+}
