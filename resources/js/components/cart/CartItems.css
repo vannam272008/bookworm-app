@@ -1,0 +1,51 @@
+.table {
+    border-style: solid;
+}
+
+.table thead th {
+    padding-left: 20px;
+}
+
+.product img {
+    padding: 10px;
+}
+
+.table .tbody img {
+    width: 120px;
+    height: 160px;
+    display: inline;
+    float: left;
+}
+
+.table .tbody .content {
+    display: inline;
+    float: left;
+    padding-left: 10px;
+}
+
+.table .tbody .price {
+    padding-left: 10px;
+}
+
+.table .tbody .price a {
+    text-decoration: line-through;
+}
+
+.tbody .quantity {
+    padding-top: 60px;
+}
+
+.tbody .quantity button{
+    border: none;
+    padding: 7px 10px 7px 10px;
+    background: rgb(217, 226, 226);
+}
+
+.tbody .quantity span{
+    padding: 7.5px 10px 9px 10px;
+    background-color: rgb(217, 226, 226);
+}
+
+h5 {
+    margin-top: 60px;
+}

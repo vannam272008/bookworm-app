@@ -1,15 +1,16 @@
 import React, { Fragment } from 'react'
 import { Col, Container, Row } from 'react-bootstrap'
 import Filter from '../components/filter/Filter'
-import Footer from '../components/footer/Footer'
-import Header from '../components/header/Header'
+import Paginate from '../components/paginate/Paginate'
+// import Footer from '../components/footer/Footer'
+// import Header from '../components/header/Header'
 import ShopTitle from '../components/shopTitle/ShopTitle'
 import Wrapper from '../components/wrapper/Wrapper'
 
 const ShopPage = () => {
   return (
     <Fragment>
-        <Header/>
+        {/* <Header/> */}
         <Container>
         <ShopTitle/>
         <Row>
@@ -18,12 +19,13 @@ const ShopPage = () => {
             </Col>
             <Col sm={9} md={9}>
                 <Wrapper/>
+                <Paginate/>
             </Col>      
             
         </Row>
         
         </Container>
-        <Footer/>
+        {/* <Footer/> */}
     </Fragment>
     
   )

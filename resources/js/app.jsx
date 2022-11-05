@@ -1,14 +1,10 @@
 import React, { Fragment } from 'react'
 import ReactDOM from "react-dom"
 import 'bootstrap/dist/css/bootstrap.css'
-import rootReducer from './reducers'
-import { createStore, applyMiddleware } from 'redux'
-import thunk from 'redux-thunk'
 import { Provider } from 'react-redux'
 import App from './index'
+import store from './reducers/store'
 
-
-// const store = createStore(rootReducer, applyMiddleware(thunk))
 import {
   BrowserRouter as Router,
   Switch,
@@ -19,12 +15,12 @@ import {
 
 
 ReactDOM.render(
-  // <Provider store={store}>
+  <Provider store={store}>
   <BrowserRouter>
     <App/>
   </BrowserRouter>,
   
 
-  // </Provider>,
+  </Provider>,
   document.getElementById('root')
 )

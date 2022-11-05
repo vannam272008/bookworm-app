@@ -1,8 +1,9 @@
-footer {
+.footer {
     width: 100%;
+    position: absolute;
 }
 
-footer .navbar-brand {
+.navbar-brand {
     margin-left: 15px;
     display: flex;
     flex-direction: row;
@@ -10,7 +11,7 @@ footer .navbar-brand {
     align-items: center;
 }
 
-footer .information-website {
+.information-website {
     margin-left: 10px;
     font-size: 15px;
     display: flex;

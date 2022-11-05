@@ -22,18 +22,18 @@
     text-decoration: line-through;
 }
 
-.quantity {
+.order-quantity .quantity {
     padding-top: 5px;
     text-align: center;
 }
 
-.quantity button{
+.order-quantity .quantity button{
     border: none;
     font-weight: 1.5rem;
     padding: 5px 20px 5px 20px;
     background: rgb(217, 226, 226);
 }
-.quantity span{
+.order-quantity .quantity span{
     padding: 6px 50px 6.5px 50px;
     background-color: rgb(217, 226, 226);
 }

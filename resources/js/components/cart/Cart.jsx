@@ -1,13 +1,13 @@
 import React from 'react'
-import { Col, Container, Row, Table } from 'react-bootstrap'
+import { Col, Container, Row} from 'react-bootstrap'
 import "./Cart.css"
-import CartItems from './Product'
 import CartTotals from './CartTotals'
+import CartItems from './CartItems'
 
 const Cart = () => {
   return (
-    <Container>
-        <h4>Your cart: 3 items</h4>
+    <Container className='container'>
+        <h4><b>Your cart: 3 items</b></h4>
         <hr/>
         <Row>
             <Col md={8}>

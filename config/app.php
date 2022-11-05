@@ -234,5 +234,6 @@ return [
     'limited_books_sale' => env('LIMITED_BOOKS_SALE', 10),
     'limited_books_recommend' => env('LIMITED_BOOKS_RECOMMEND', 8),
     'limited_books_popular' => env('LIMITED_BOOKS_POPULAR', 8),
+    'url_app' => env('URL_APP','http://127.0.0.1:8000'),
 
 ];

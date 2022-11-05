@@ -5,7 +5,7 @@ import "./Footer.css"
 
 const Footer = (props) => {
   return (
-    <footer className="mt-5">
+    <footer className="footer mt-5">
         <Navbar className="navbar navbar-light bg-light" fixed={props.fixed}>
             <a className="navbar-brand" href="#">
                 <img src={imgLogo} width="64" height="64" className="d-inline-block align-top" alt=""/>

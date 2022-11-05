@@ -6,7 +6,7 @@ import "./About.css"
 const About = () => {
   return (
     <Container className="container-about">
-            <h4>About Us</h4>
+            <h4><b>About Us</b></h4>
             <hr />
             <div className='about-content'>
                 <h3 style={{ textAlign: "center" }}>Welcome to Bookworm</h3>

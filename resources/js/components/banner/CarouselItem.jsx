@@ -4,8 +4,10 @@ import { Carousel, Col, Row , Card, Button} from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {faCaretLeft, faCaretRight} from '@fortawesome/free-solid-svg-icons'
 import Item from '../item/Item';
+import Loading from '../ui/Loading';
 
-const CarouselItem = () => {
+const CarouselItem = (props) => {
+  console.log(props.bookData);
   return (
     <Carousel 
         prevLabel={""}
@@ -28,62 +30,31 @@ const CarouselItem = () => {
         }
         
     >
-    
-      <Carousel.Item>
-      <Row>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
+      {!props.success && <Loading/>} 
+      {props.success && (
+        <Carousel.Item>
+            <Row>
+            <Col sm={12} md={6} lg={3}>
+              <Item />
+            </Col>
+            
+            <Col sm={12} md={6} lg={3}>
+              <Item/>
+            </Col>
+
+            <Col sm={12} md={6} lg={3}>
+              <Item/>
+            </Col>
+            <Col sm={12} md={6} lg={3}>
+              <Item/>
+            </Col>
+            </Row>
+          
+        </Carousel.Item>
+      )
+       
+      }
       
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
-        
-      </Carousel.Item>
-
-      <Carousel.Item>
-      <Row>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
-
-      </Carousel.Item>
-
-      <Carousel.Item>
-      <Row>
-      <Col>
-        <Item/>
-      </Col>
-      
-      <Col>
-        <Item/>
-      </Col>
-      <Col>
-        <Item/>
-      </Col>
-      <Col>
-        <Item/>
-      </Col>
-      </Row>
-      </Carousel.Item>
     </Carousel>
   )
 }
