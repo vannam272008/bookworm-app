@@ -3,28 +3,55 @@
     color: black;
 }
 
+.card {
+    margin-bottom: 10px;
+}
+
 .card-img {
-    height: 250px;
+    height: 200px;
+    margin-bottom: 5px;
 }
 
 .card-title {
     font-size: 0.9rem;
+    height: 50px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
-.card-text {
-    font-size: 0.85rem;
+.card-title:hover {
+    height: 50px;
+    font-size: 0.7rem;
+    overflow: visible; 
+    white-space: normal; 
+    width: auto;
+    background-color:#FFF;
+}
+
+
+
+.card-body .card-text {
+    font-size: 0.8rem;
+}
+
+.card-body hr{
+    border: 1px solid gray;
+    padding: 0;
+}
+
+hr {
+    margin: 0;
 }
 
 .card-price span{
     text-decoration: line-through;
     font-size: 0.7rem;
     margin-right: 3px;
+    margin-left: 10px;
 }
 
-.card-body {
-    height: 200px;
+.card-price {
+    padding: 5px;
 }
 
-.card {
-    height: 450px;
-}

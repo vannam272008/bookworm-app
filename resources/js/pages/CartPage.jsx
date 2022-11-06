@@ -1,18 +1,19 @@
-import React, { Fragment } from 'react'
-import { Container } from 'react-bootstrap'
-import Cart from '../components/cart/Cart'
-import Footer from '../components/footer/Footer'
-import Header from '../components/header/Header'
+import React, { Fragment } from "react";
+import { Container } from "react-bootstrap";
+import Cart from "../components/cart/Cart";
+import Footer from "../components/footer/Footer";
+import Header from "../components/header/Header";
 
 const CartPage = () => {
-  return (
-    <Fragment>
-        <Header/>
-        <Container>
-          <Cart/>
-        </Container>
-    </Fragment>
-  )
-}
+    return (
+        <Fragment>
+            <Header />
+            <Container>
+                <Cart />
+            </Container>
+            <Footer />
+        </Fragment>
+    );
+};
 
-export default CartPage
+export default CartPage;

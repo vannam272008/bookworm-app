@@ -21,6 +21,8 @@ const Feature = () => {
     const [isClicked, setIsClicked] = useState("recommend");
     const [success, setSuccess] = useState(false);
 
+    const [isSelect, setIsSelect] = useState(true)
+
     function handleSelectChange(e) {
         setIsClicked(e.target.value);
     }
@@ -30,14 +32,15 @@ const Feature = () => {
         dispatch(fetchBookPopularData());
         setSuccess(true);
     }, []);
-    console.log(bookRecommendData);
 
     const handleOnClickRecommend = useCallback(() => {
         dispatch(fetchBookRecommendData());
+        setIsSelect(true)
     }, [bookRecommendData]);
 
     const hanldeOnClickPopular = useCallback(() => {
         dispatch(fetchBookPopularData());
+        setIsSelect(false)
     }, [bookPopularData]);
 
     return (
@@ -51,17 +54,22 @@ const Feature = () => {
                     onClick={handleSelectChange}
                 >
                     <Button
+                        typeof="radio"
                         variant="light"
                         value="recommend"
-                        className="recommend selected"
+                        className={`recommend ${isSelect && "active-handler"}`}
+                        checked={isClicked === 'recommend'}
                         onClick={handleOnClickRecommend}
+                       
                     >
                         Recommend
                     </Button>
                     <Button
+                        typeof="radio"
                         variant="light"
                         value="popular"
-                        className="popular"
+                        className={`popular ${!isSelect && "active-handler"}`}
+                        checked={isClicked === 'popular'}
                         onClick={hanldeOnClickPopular}
                     >
                         Popular

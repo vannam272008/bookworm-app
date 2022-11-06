@@ -1,0 +1,30 @@
+@media only screen and (max-width: 1400px) {
+    div.banner #carouselIndexIndicators .carousel-inner .carousel-item img {
+        height: 22rem;
+    }
+}
+@media only screen and (max-width: 1050px) {
+    div.banner #carouselIndexIndicators .carousel-inner .carousel-item img {
+        height: 15rem;
+    }
+}
+@media only screen and (max-width: 767px) {
+    div.banner #carouselIndexIndicators .carousel-inner .carousel-item img {
+        height: 30rem;
+    }
+    div.banner #carouselIndexIndicators .carousel-control-prev, div.banner #carouselIndexIndicators .carousel-control-next {
+        width: 10%;
+    }
+}
+@media only screen and (max-width: 650px) {
+    div.banner #carouselIndexIndicators .carousel-inner .carousel-item img {
+        height: 20rem;
+    }
+    div.banner #carouselIndexIndicators .carousel-control-prev, div.banner #carouselIndexIndicators .carousel-control-next {
+        width: 15%;
+    }
+    .banner .carousel-control-prev .fa-caret-left, .banner .carousel-control-next .fa-caret-right {
+        text-shadow: 0 0 3px #868f96;
+        font-size: 70px;
+    }
+}

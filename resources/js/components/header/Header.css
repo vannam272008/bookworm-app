@@ -2,6 +2,7 @@
     overflow: hidden;
     z-index: 10000000000;
     width: 100%;
+    padding: 0;
 }
 
 .nav-title {
@@ -9,61 +10,28 @@
     margin-right: 120px;
 }
 
+.nav-title a {
+    margin-right: 10px;
+    text-decoration: none;
+    color: gray;
+}
+
 .navbar-brand {
-    display: flex;
-    flex-direction: row;
+    display: inline;
     margin-left: 10px;
 }
 
+.navbar-brand p {
+    margin-top: 5px;
+}
+
 .navbar-brand img {
-    padding-bottom: 5px;
+    float:left;
+    margin-right: 5px;
 }
 
-.navbar-brand b {
-    margin-left: 5px;
-}
 
-/* header nav.navbar {
-    overflow: hidden;
-    position: fixed;
-    z-index: 10000000000;
-    top: 0;
-    width: 100%;
+.navbar-nav .select-page{
+    color:  blue;
+    text-decoration: underline;
 }
-header nav.navbar .collapse {
-    margin-right: 1.5rem;
-    justify-content: end;
-}
-
-header nav.navbar .collapse li {
-    padding: 0.5rem;
-}
-
-header nav.navbar .navbar-brand {
-    display: flex;
-    flex-direction: row;
-    align-content: center;
-    align-items: center;
-    margin-left: 15px;
-}
-
-header nav.navbar .navbar-brand b{
-    margin-left: 5px;
-}
-
-div.banner div.col-auto button.btn-view-all {
-    background-color: #868f96;
-}
-
-div.banner #carouselIndexIndicators {
-    border: 0.5px solid #868f96;
-}
-
-div.banner #carouselIndexIndicators .carousel-control-prev,
-div.banner #carouselIndexIndicators .carousel-control-next {
-    width: 5%;
-}
-
-div.banner #carouselIndexIndicators .carousel-inner .carousel-item img {
-    height: 27rem;
-} */

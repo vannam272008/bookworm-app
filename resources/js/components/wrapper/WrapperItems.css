@@ -2,11 +2,20 @@
     text-align: center;
 }
 
-.card-items {
-    padding-top: 10px;
+.wrapper-items {
     margin-top: 50px;
 }
 
 .row-card-items{
-    margin-top: 20px;
+    padding: 10px;
+}
+
+.col-item {
+    margin-bottom: 10px;
+}
+
+@media only screen and (max-width: 769px){
+    .wrapper-items {
+        margin-top: 100px;
+    }
 }

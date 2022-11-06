@@ -1,79 +1,35 @@
-import React from 'react'
-import { Col, Row , Card} from 'react-bootstrap';
-import "./WrapperItems.css"
-import Item from '../item/Item';
+import React from "react";
+import { Col, Row, Card } from "react-bootstrap";
+import "./WrapperItems.css";
+import Item from "../item/Item";
 
-const WrapperItems = () => {
-  return (
-    <div className='card-items'>
-    <Row className='row-card-items'>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
+const WrapperItems = (props) => {
+    return (
+        <div className="wrapper-items">
+            <Row className="row-card-items">
+                {props.data.map((book) => {
+                    return (
+                        <Col
+                            sm={12}
+                            md={6}
+                            lg={3}
+                            className="col-item"
+                            key={book.id}
+                        >
+                            <Item
+                                id={book.id}
+                                bookCoverPhoto={book.book_cover_photo}
+                                bookTitle={book.book_title}
+                                authorName={book.author.author_name}
+                                finalPrice={book.final_price}
+                                bookPrice={book.book_price}
+                            />
+                        </Col>
+                    );
+                })}
+            </Row>
+        </div>
+    );
+};
 
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
-
-      <Row className='row-card-items'>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
-      <Row className='row-card-items'>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
-      <Row className='row-card-items'>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
-    </div>
-      
-  )
-}
-
-export default WrapperItems
+export default WrapperItems;

@@ -1,6 +1,8 @@
 import BookBannerReducer from "./BookBannerSlice";
 import BookRecommendReducer from "./BookRecommendSlice";
 import BookPopularReducer from "./BookPopularSlice";
+import BookShopReducer from "./BookShopSlice";
+import BookFilterReducer from "./BookFilterSlice";
 import { configureStore } from "@reduxjs/toolkit";
 
 const store = configureStore({
@@ -8,6 +10,8 @@ const store = configureStore({
         bookBanner: BookBannerReducer,
         bookRecommend: BookRecommendReducer,
         bookPopular: BookPopularReducer,
+        bookShop: BookShopReducer,
+        bookFilter: BookFilterReducer,
     }
 });
 

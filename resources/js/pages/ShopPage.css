@@ -1,0 +1,11 @@
+.container-shop-show-book .row {
+    display: flex;
+    align-items: flex-start;
+    overflow: visible;
+}
+
+.container-shop-show-book .row .wrapper-filter-shop {
+    position: sticky;
+    position: -webkit-sticky;
+    top: 70px;
+}

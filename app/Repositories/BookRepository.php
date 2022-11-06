@@ -18,7 +18,10 @@ class BookRepository implements BookRepositoryInterface
         if ($value == 'popular'){
             return $this->sortPopular($query);
         }
-        if ($value == 'price'){
+        if ($value == 'asc'){
+            return $this->sortPrice($query, $value);
+        }
+        if ($value == 'desc'){
             return $this->sortPrice($query, $value);
         }
         return $this->sortSale($query);
