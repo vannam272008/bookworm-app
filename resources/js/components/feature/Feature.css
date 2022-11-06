@@ -3,17 +3,9 @@
     text-align: center;
 }
 
-.feature-select .card-items {
-    padding: 20px 115px 20px 115px;
-    margin-top: 10px;
-    border: 1px solid black;
-}
+
 
 .feature-select .popular {
     padding-left: 20px;
     padding-right: 20px;
-}
-
-.feature-select .row-card-items{
-    margin-top: 20px;
 }

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import CarouselItem from './CarouselItem'
 import "./Banner.css"
-import { Container, Row } from 'react-bootstrap'
+import { Container} from 'react-bootstrap'
 import BannerTitle from './BannerTitle'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchBookBannerData } from '../../services/BookBannerService'
@@ -11,7 +11,7 @@ import { fetchBookBannerData } from '../../services/BookBannerService'
 
 const Banner = () => {
   const dispatch = useDispatch();
-  const bookData = useSelector(state => state.bookBanner.books);
+  const bookBannerData = useSelector(state => state.bookBanner.bookBanner);
   const success = useSelector(state => state.bookBanner.success);
 
   useEffect(() => {
@@ -21,7 +21,7 @@ const Banner = () => {
   return (
         <Container className="banner mt-4">
             <BannerTitle/>
-            <CarouselItem success={success} bookData = {bookData}/>
+            <CarouselItem success={success} bookBannerData = {bookBannerData}/>
         </Container>
       
     

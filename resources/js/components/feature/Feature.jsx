@@ -1,64 +1,85 @@
-import React from 'react'
-import { Button, ButtonGroup, Container } from 'react-bootstrap'
-import { Col, Row} from 'react-bootstrap';
-import Item from '../item/Item';
-import "./Feature.css"
+import React, { useCallback, useEffect, useState } from "react";
+import { Button, ButtonGroup, Container } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchBookPopularData } from "../../services/BookPopularService";
+import { fetchBookRecommendData } from "../../services/BookRecommendService";
+import "./Feature.css";
+import FeatureItems from "./FeatureItems";
 
+// props vs state
 const Feature = () => {
+    const dispatch = useDispatch();
+    const bookRecommendData = useSelector(
+        (state) => state.bookRecommend.bookRecommend
+    );
+    const bookPopularData = useSelector(
+        (state) => state.bookPopular.bookPopular
+    );
+    // const bookFeaturedData = useSelector(state => state.bookRecommend.bookRecommend);
 
-  return (
-    <Container className='feature-select tex'>
-    <div className='btn-featured-books'>
-        <h3>Featured Books</h3>
-        <ButtonGroup>
-          <Button variant="light" className='recommend'>Recommend</Button>
-          <Button variant="light" className='popular'>Popular</Button>
-        </ButtonGroup>
-    </div>
-      
-      
-    {/* Items Books */}
-    <div className='card-items'>
-    <Row className='row-card-items'>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
+    // const [bookFeaturedData, setBookFeaturedData] = useState([]);
+    const [isClicked, setIsClicked] = useState("recommend");
+    const [success, setSuccess] = useState(false);
 
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
+    function handleSelectChange(e) {
+        setIsClicked(e.target.value);
+    }
 
-      <Row className='row-card-items'>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
+    useEffect(() => {
+        dispatch(fetchBookRecommendData());
+        dispatch(fetchBookPopularData());
+        setSuccess(true);
+    }, []);
+    console.log(bookRecommendData);
 
-      <Col sm={6} md={3}>
-      <Item/>
-      </Col>
-      <Col sm={6} md={3}>
-        <Item/>
-      </Col>
-      </Row>
-    </div>
-      
-    </Container>
+    const handleOnClickRecommend = useCallback(() => {
+        dispatch(fetchBookRecommendData());
+    }, [bookRecommendData]);
 
-    
-    
-  )
-}
+    const hanldeOnClickPopular = useCallback(() => {
+        dispatch(fetchBookPopularData());
+    }, [bookPopularData]);
 
-export default Feature
+    return (
+        <Container className="feature-select tex">
+            <div className="btn-featured-books">
+                <h3>Featured Books</h3>
+                <ButtonGroup
+                    typeof="radio"
+                    name="options"
+                    value={isClicked}
+                    onClick={handleSelectChange}
+                >
+                    <Button
+                        variant="light"
+                        value="recommend"
+                        className="recommend selected"
+                        onClick={handleOnClickRecommend}
+                    >
+                        Recommend
+                    </Button>
+                    <Button
+                        variant="light"
+                        value="popular"
+                        className="popular"
+                        onClick={hanldeOnClickPopular}
+                    >
+                        Popular
+                    </Button>
+                </ButtonGroup>
+            </div>
+            <FeatureItems
+                success={success}
+                bookFeaturedData={
+                    isClicked === "recommend"
+                        ? bookRecommendData
+                        : isClicked === "popular"
+                        ? bookPopularData
+                        : []
+                }
+            />
+        </Container>
+    );
+};
+
+export default Feature;

@@ -25,7 +25,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::post('login', [LoginController::class, 'login'])->name('api.login');
 Route::get('books/filter',[BookApiController::class,'filter']);
-Route::get('books/sort', [BookApiController::class,'sort']);
+Route::get('books/home', [BookApiController::class,'sort']);
 Route::get('books/{book}/reviews/filter',[ReviewBookApiController::class, 'filter']);
 Route::apiResource('books/{book}/reviews',ReviewBookApiController::class);
 Route::apiResource('books', BookApiController::class);

@@ -5,7 +5,7 @@ import "./WrapperTitle.css"
 const WrapperTitle = () => {
   return (
     <div className='wrapper-title'>
-                <p>Showing 1-12 of 126 of books</p>
+            <p>Showing 1-12 of 126 of books</p>
             <div className='wrapper-dropdown'>
                 <Dropdown className='dropdown-sort'>
                     <Dropdown.Toggle id="dropdown-button-dark-example1" variant="secondary">

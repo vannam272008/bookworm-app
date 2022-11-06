@@ -6,16 +6,16 @@ import "./Item.css"
 const Item = (props) => {
   return (
     <Link to="/detail" className='link-item'>
-      <Card style={{ width: 'auto' }} >
-        <Card.Img variant="top" src={`./images/bookcover/${props.book_cover_photo}.jpg`} />
+      <Card style={{ width: 'auto' }}>
+        <Card.Img className='card-img' variant="top" src={`./images/bookcover/${props.bookCoverPhoto ? props.bookCoverPhoto : 'book1'}.jpg`} />
         <Card.Body>
-            <Card.Title>{props.title}</Card.Title>
-            <Card.Text className='card-text'>
-            {props.name}
+            <Card.Title>{props.bookTitle}</Card.Title>
+            <Card.Text>
+            {props.authorName}
             </Card.Text>
-            <Card.Text className='card-text'>
-            <span>{props.book_price}</span>
-            <b>{props.final_price}</b>
+            <Card.Text className='card-price'>
+            <span>{props.bookPrice}</span>
+            <b>{props.finalPrice}</b>
             </Card.Text>
         </Card.Body>
       </Card>

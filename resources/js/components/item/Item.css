@@ -3,12 +3,28 @@
     color: black;
 }
 
-.card-text {
+.card-img {
+    height: 250px;
+}
+
+.card-title {
     font-size: 0.9rem;
 }
 
-.card-text span {
+.card-text {
+    font-size: 0.85rem;
+}
+
+.card-price span{
     text-decoration: line-through;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     margin-right: 3px;
+}
+
+.card-body {
+    height: 200px;
+}
+
+.card {
+    height: 450px;
 }
