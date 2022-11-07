@@ -3,10 +3,9 @@ import HomePage from "./pages/HomePage";
 import ShopPage from "./pages/ShopPage";
 import AboutPage from "./pages/AboutPage";
 
-import { Routes, Route, Router } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import CartPage from "./pages/CartPage";
 import DetailPage from "./pages/DetailPage";
-// import Switch from "react-bootstrap/esm/Switch";
 
 const Index = () => {
     return (
@@ -16,7 +15,7 @@ const Index = () => {
                 <Route path="/shop" element={<ShopPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/cart" element={<CartPage />} />
-                <Route path="/detail" element={<DetailPage />} />
+                <Route path="/detail/:bookId" element={<DetailPage />} />
             </Routes>
         </Fragment>
     );

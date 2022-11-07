@@ -19,24 +19,11 @@ class BookRepository implements BookRepositoryInterface
             return $this->sortPopular($query);
         }
         if ($value == 'asc'){
-            return $this->sortPrice($query, $value);
+            return $this->sortAsc($query);
         }
         if ($value == 'desc'){
-            return $this->sortPrice($query, $value);
+            return $this->sortDesc($query);
         }
-        return $this->sortSale($query);
-
-        // switch ($value) {
-        //     case 'sale':
-        //         return $this->sortSale($query);
-        //     case 'popular':
-        //         return $this->sortPopular($query);
-        //     case 'price':
-        //         return $this->sortPrice($value, $query);
-        //     default:
-        //         return $this->sortSale($query);
-        // }
-
     }
 
     public function filter($query, $request){
@@ -57,11 +44,6 @@ class BookRepository implements BookRepositoryInterface
             
             continue;
         }
-
-        if (!$request->sort){
-            $this->sortSale($query);
-        }
-        // return $query->paginate(5);
         return $query->paginate($this->customPaginate($request))->appends(request()->query());
     }
 
@@ -109,12 +91,20 @@ class BookRepository implements BookRepositoryInterface
         END ASC');
     }
 
-    protected function sortPrice($value, $query){
+    protected function sortAsc($query){
         return $query->orderByRaw('CASE
         WHEN (discount.discount_end_date IS NULL AND DATE(NOW()) >= discount.discount_start_date) THEN discount.discount_price
         WHEN (discount.discount_end_date IS NOT NULL AND ( DATE(NOW()) >= discount.discount_start_date AND DATE(NOW()) <= discount.discount_end_date ) ) THEN discount.discount_price
         ELSE book.book_price
-        END ' . $value);
+        END ASC');
+    }
+
+    protected function sortDesc($query){
+        return $query->orderByRaw('CASE
+        WHEN (discount.discount_end_date IS NULL AND DATE(NOW()) >= discount.discount_start_date) THEN discount.discount_price
+        WHEN (discount.discount_end_date IS NOT NULL AND ( DATE(NOW()) >= discount.discount_start_date AND DATE(NOW()) <= discount.discount_end_date ) ) THEN discount.discount_price
+        ELSE book.book_price
+        END DESC');
     }
 
     protected function sortRecommend($query){

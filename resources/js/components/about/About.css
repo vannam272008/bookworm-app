@@ -8,6 +8,10 @@
     padding-right: 100px;
 }
 
+.container .container-about .about-content h3{
+    margin-top: 10px;
+}
+
 .our-story-wrapper {
     text-align: justify;
     text-justify: inter-word;

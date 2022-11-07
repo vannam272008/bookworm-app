@@ -4,6 +4,8 @@ import BookPopularReducer from "./BookPopularSlice";
 import BookShopReducer from "./BookShopSlice";
 import BookFilterReducer from "./BookFilterSlice";
 import { configureStore } from "@reduxjs/toolkit";
+import BookDetailReducer from "./BookDetailSlice";
+import BookShopFilterReducer from "./BookShopFilterSlice";
 
 const store = configureStore({
     reducer: {
@@ -12,7 +14,9 @@ const store = configureStore({
         bookPopular: BookPopularReducer,
         bookShop: BookShopReducer,
         bookFilter: BookFilterReducer,
-    }
+        bookShopFilter: BookShopFilterReducer,
+        bookDetail: BookDetailReducer,
+    },
 });
 
-export default store
+export default store;

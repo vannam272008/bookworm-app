@@ -45,7 +45,7 @@ class BookResource extends JsonResource
             'book_cover_photo' => $this->book_cover_photo,
             'review_count' => $this->reviews_count,
             // 'reviews' => $this->reviews,
-            'avg_star' => $this->avg_star,
+            // 'avg_star' => $this->avg_star,
         ];
 
         // 'reviews'=> ReviewResource::collection(Review::all()->where('book_id','=',$this->id))

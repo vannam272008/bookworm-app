@@ -9,7 +9,10 @@ import ShopTitle from "../components/shopTitle/ShopTitle";
 import Loading from "../components/ui/Loading";
 import Wrapper from "../components/wrapper/Wrapper";
 import { fetchBookFilterData } from "../services/BookFilterService";
-import { fetchBookShopData } from "../services/BookShopService";
+import {
+    fetchBookShopData,
+    fetchBookShopFilterData,
+} from "../services/BookShopService";
 import "./ShopPage.css";
 
 const ShopPage = () => {
@@ -18,17 +21,13 @@ const ShopPage = () => {
     const bookShopData = useSelector((state) => state.bookShop.bookShop);
     const success = useSelector((state) => state.bookFilter.success);
     const successBookShop = useSelector((state) => state.bookShop.success);
+    const meta = useSelector((state) => state.bookShop.meta);
+
+    //catch events changeParams
     const [params, setParams] = useState({
         sort: "sale",
         show: 20,
     });
-
-    const [page, setPage] = useState(1);
-    const meta = useSelector((state) => state.bookShop.meta);
-
-    const changePage = (number_page) => {
-        setPage(number_page);
-    };
     const changeParamsHandler = (new_param) => {
         setParams((prevValue) => {
             return {
@@ -39,26 +38,79 @@ const ShopPage = () => {
         });
     };
 
+    //catch events changeFilterParams
+    const [filterParams, setFilterParams] = useState({
+        filterBy: "",
+        id: "",
+        name: "",
+    });
+    const onChangeFilterParamsHandler = (new_filter_param) => {
+        setFilterParams((prevValue) => {
+            return {
+                ...prevValue,
+                filterBy: new_filter_param.filterBy,
+                id: new_filter_param.id,
+                name: new_filter_param.name,
+            };
+        });
+    };
+    const [isClickedFilter, setIsClickedFilter] = useState(false);
+
+    const clickedFilterHandler = () => {
+        setIsClickedFilter(true);
+    };
+
+    const noneClickedFilterHandler = () => {
+        setIsClickedFilter(false);
+    };
+
+    //catch events changePages
+    const [page, setPage] = useState(1);
+    const changePage = (number_page) => {
+        setPage(number_page);
+    };
+
+    //useEffect
     useEffect(() => {
         dispatch(fetchBookFilterData());
     }, []);
 
     useEffect(() => {
-        // if(clickFilter){
-        //     return  dispatch(fetchBookShopDataFilter(params.sort, params.show, page, type, id));
-        // }
+        if (isClickedFilter && filterParams.filterBy !== "") {
+            return dispatch(
+                fetchBookShopFilterData(
+                    filterParams.filterBy,
+                    filterParams.id,
+                    params.sort,
+                    params.show,
+                    page
+                )
+            );
+        }
         dispatch(fetchBookShopData(params.sort, params.show, page));
-    }, [params, page]);
+    }, [params, page, filterParams, isClickedFilter]);
+
     return (
         <Fragment>
             <Header />
             <Container className="container-shop-show-book">
-                <ShopTitle />
+                <ShopTitle
+                    noneClickedFilterHandler={noneClickedFilterHandler}
+                    isClickedFilter={isClickedFilter}
+                    filterParams={filterParams}
+                    setFilterParams={setFilterParams}
+                />
                 <Row>
                     <Col sm={3} md={3} className="wrapper-filter-shop">
                         <Filter
                             success={success}
                             bookFilterData={bookFilterData}
+                            clickedFilterHandler={clickedFilterHandler}
+                            onChangeFilterParamsHandler={
+                                onChangeFilterParamsHandler
+                            }
+                            changePage={changePage}
+                            filterParams={filterParams}
                         />
                     </Col>
                     <Col sm={9} md={9}>

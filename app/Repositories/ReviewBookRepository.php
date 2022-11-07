@@ -21,10 +21,13 @@ class ReviewBookRepository implements ReviewBookRepositoryInterface{
     }
 
     public function sort($query, $value){
-        if ($value == null){
+        if ($value == 'desc'){
             return $query->orderBy('review_date','desc');
         }
-        return $query->orderBy('review_date',$value);
+        if ($value == 'asc'){
+            return $query->orderBy('review_date','asc');
+        }
+        
     }
 
     public function filter($query, $request){
@@ -46,10 +49,10 @@ class ReviewBookRepository implements ReviewBookRepositoryInterface{
             continue;
         }
 
-        if (!$request->sort){
-            $this->sort($query, '');
-        }
-        // return $query->paginate(5)->appends(request()->query());
+        // if (!$request->sort){
+        //     $this->sort($query, '');
+        // }
+        // // return $query->paginate(5)->appends(request()->query());
         return $query->paginate($this->customPaginate($request))->appends(request()->query());
     }
 
@@ -86,27 +89,6 @@ class ReviewBookRepository implements ReviewBookRepositoryInterface{
         // ]);
         
     }
-
-
-
-
-
-    // protected function customPaginate(Request $request)
-    // {
-    //     if ($request->items_per_page){
-    //         return $request->items_per_page;
-    //     }
-    //     return config('app.items_per_page');
-    // }
-
-    // public function filter($query, $request){
-    //     return ;
-    // }
-
-    // protected function sortByDate($query, $value){
-    //     return $query->orderBy('review_date',$value);
-    // }
-
 
 
 }

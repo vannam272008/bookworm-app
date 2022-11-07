@@ -1,0 +1,8 @@
+.paginate {
+    justify-content: center;
+    margin-top: 10px;
+}
+.page-current a {
+    background-color: gray;
+    color: white;
+}

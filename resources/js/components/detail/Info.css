@@ -9,7 +9,7 @@
     margin-bottom: 10px;
 }
 
-.col-img {
+.col-img{
     padding: 0;
     display: inline;
     float:left;
@@ -18,10 +18,15 @@
 
 .col-img p {
     padding-right: 15px;
+    font-size: 0.9rem;
 }
 
 .col-img img {
     margin-right: 15px;
-    height: 220px;
-    width: 200px;
+    height: 320px;
+    width: 280px;
+}
+
+.col-content {
+    margin: 10px;
 }

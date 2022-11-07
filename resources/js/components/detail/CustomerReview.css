@@ -9,7 +9,7 @@
     margin-top: 10px;
 }
 
-.title-review h4 {
+.title-review .title {
     float: left;
 }
 
@@ -26,17 +26,34 @@
 
 .avg-star #avg-star-count {
     margin-right: 20px;
-    
 }
 
 .list-star {
     font-size: 0.9rem;
-    text-decoration:underline;
 }
 
 .total-star {
     display: inline;
     float: left;
     margin-right: 10px;
-    text-decoration:underline;
+}
+
+.count-stars .list-star .btn-text {
+    color: blue;
+}
+
+.list-star span:hover {
+    color: blue;
+}
+
+.list-star .total-star a:hover {
+    color: blue;
+}
+
+.count-stars .btn {
+    border: none;
+    background-color: white;
+    color: black;
+    text-decoration: underline;
+    padding-left: 10px;
 }

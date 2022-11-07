@@ -1,21 +1,30 @@
-import React from 'react'
-import "./Info.css"
+import React from "react";
+import Loading from "../ui/Loading";
+import "./Info.css";
 
-const Info = () => {
-  return (
-    <div className='row-book-detail'>
-        <div className="col-img">
-            <img src="./images/bookcover/book1.jpg"/>
-            <p>By (author)<b>Anna Banks</b></p>
+const Info = (props) => {
+    const hostname = window.location.host;
+    return (
+        <div className="row-book-detail">
+            <div className="col-img">
+                <img
+                    src={`http://${hostname}/images/bookcover/${props.bookInfo.book_cover_photo}.jpg`}
+                />
+                <p>
+                    By (author)
+                    <b>{props.bookInfo.author.author_name}</b>
+                </p>
+            </div>
+            <div className="col-content">
+                <h4>{props.bookInfo.book_title}</h4>
+                <a>
+                    <b>Book description</b>
+                </a>
+                <br />
+                <a>{props.bookInfo.book_summary}</a>
+            </div>
         </div>
-        <div className='col-content'>
-            <h4>Book Title</h4>
-            <a>Book description</a>
-            <br/>
-            <a>Voluptatem et suscipit ea voluptatibus. Et aspernatur laborum quo accusantium. Accusamus nemo ea illum velit sit.</a>
-        </div>
-    </div>
-  )
-}
+    );
+};
 
-export default Info
+export default Info;

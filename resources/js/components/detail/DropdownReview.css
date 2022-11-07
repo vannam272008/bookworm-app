@@ -20,3 +20,8 @@
     display: inline;
     float: right;
 }
+
+.dropdown-button {
+    border: 1px solid gray;
+    background-color: gray;
+}

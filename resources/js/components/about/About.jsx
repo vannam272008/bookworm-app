@@ -1,24 +1,29 @@
-import React from 'react'
-import { Col, Container, Row } from 'react-bootstrap'
-import "./About.css"
-
+import React from "react";
+import { Col, Container, Row } from "react-bootstrap";
+import "./About.css";
 
 const About = () => {
-  return (
-    <Container className="container-about">
-            <h4><b>About Us</b></h4>
+    return (
+        <Container className="container-about">
+            <h4>
+                <b>About Us</b>
+            </h4>
             <hr />
-            <div className='about-content'>
-                <h3 style={{ textAlign: "center" }}>Welcome to Bookworm</h3>
+            <div className="about-content">
+                <h3 style={{ textAlign: "center" }}>
+                    <b>Welcome to Bookworm</b>
+                </h3>
                 <p>
-                    Bookworm is an independent New York bookstore and language
+                    "Bookworm is an independent New York bookstore and language
                     school with locations in Manhattan and Brooklyn. We
-                    specialize in travel books and language classes.
+                    specialize in travel books and language classes."
                 </p>
 
                 <Row>
                     <Col sm={12} md={6} className="our-story-wrapper">
-                        <h3>Out Story</h3>
+                        <h3>
+                            <b>Out Story</b>
+                        </h3>
                         <p>
                             The name Bookworm was taken from the original name
                             for New York International Airport, which was
@@ -35,7 +40,9 @@ const About = () => {
                         </p>
                     </Col>
                     <Col sm={12} md={6} className="our-vision-wrapper">
-                        <h3>Our Vision</h3>
+                        <h3>
+                            <b>Our Vision</b>
+                        </h3>
                         <p>
                             One of the last travel bookstores in the country,
                             our Manhattan store carries a range of guidebooks
@@ -53,7 +60,7 @@ const About = () => {
                 </Row>
             </div>
         </Container>
-  )
-}
+    );
+};
 
-export default About
+export default About;

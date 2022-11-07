@@ -20,7 +20,6 @@ const Paginate = (props) => {
     };
     useEffect(() => {
         props.changePage(numberPage);
-
         return () => {
             window.scrollTo({
                 top: 0,
@@ -37,6 +36,7 @@ const Paginate = (props) => {
             props.changePage(props.page);
         }
     }, [props.page]);
+    // console.log(props.meta.links);
 
     return (
         <Pagination className="paginate">

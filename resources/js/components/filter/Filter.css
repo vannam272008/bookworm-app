@@ -3,21 +3,16 @@
     border-radius: 10px;
 }
 
-.btn-text {
+/* .btn-text {
     display: block;
 }
-.card-filter .card-body .card-text {
-    padding: 10px;
-    margin-top: 0;
-    margin-bottom: 0;
-}
 
 .btn-text {
-
     border: none;
     background-color: white;
     color: black;
-}
+    font-size: 0.8rem;
+} */
 
 .btn-text:hover {
     background-color: white;
@@ -27,4 +22,17 @@
     margin-left: 5px;
     margin-bottom: 10px;
     margin-top: 10px;
+}
+
+.filter .wrapper-filter .btn-text {
+    color: blue;
+    text-decoration: underline;
+}
+
+.filter  .btn {
+    display: block;
+    border: none;
+    background-color: white;
+    color: black;
+    font-size: 0.8rem;
 }

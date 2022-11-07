@@ -2,22 +2,16 @@ import React, { Fragment } from "react";
 import ReactDOM from "react-dom";
 import "bootstrap/dist/css/bootstrap.css";
 import { Provider } from "react-redux";
-import App from "./index";
+import Index from "./index";
 import store from "./reducers/store";
 import "../css/app.css";
 
-import {
-    BrowserRouter as Router,
-    Switch,
-    Route,
-    Link,
-    BrowserRouter,
-} from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 
 ReactDOM.render(
     <Provider store={store}>
         <BrowserRouter>
-            <App />
+            <Index />
         </BrowserRouter>
         ,
     </Provider>,
