@@ -11,7 +11,7 @@ const CartPage = () => {
             <Container>
                 <Cart />
             </Container>
-            <Footer />
+            <Footer fixed="bottom" />
         </Fragment>
     );
 };

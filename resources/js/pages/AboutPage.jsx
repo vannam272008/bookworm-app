@@ -11,7 +11,7 @@ const AboutPage = () => {
             <Container>
                 <About />
             </Container>
-            <Footer />
+            <Footer fixed="bottom" />
         </Fragment>
     );
 };

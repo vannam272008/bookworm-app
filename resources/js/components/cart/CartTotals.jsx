@@ -1,9 +1,26 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Table } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
 import "./CartTotals.css";
+import { placeOrder, isChangeShow } from "../../services/BookCartService";
+import { useParams } from "react-router-dom";
 
 const CartTotals = () => {
-    const booksOrderStorage = JSON.parse(localStorage.getItem("booksOrder"));
+    const userId = useParams().userId;
+    const booksOrderStorage =
+        JSON.parse(localStorage.getItem("booksOrder")) !== null
+            ? JSON.parse(localStorage.getItem("booksOrder"))
+            : [];
+    let totalPrice = 0.0;
+    const dispatch = useDispatch();
+    const show = useSelector((state) => state.bookCart.show);
+
+    const onPlaceOrder = () => {
+        dispatch(placeOrder(booksOrderStorage, userId));
+        localStorage.clear();
+        dispatch(isChangeShow());
+    };
+
     return (
         <div className="cart-totals">
             <div className="cart-title">
@@ -14,19 +31,17 @@ const CartTotals = () => {
             <div className="cart-content">
                 <h4>
                     <b>
-                        {booksOrderStorage == null
+                        {show
                             ? 0
                             : booksOrderStorage.map((book) => {
-                                  let total = 0.0;
-                                  total =
-                                      total +
+                                  totalPrice =
+                                      totalPrice +
                                       parseFloat(book.final_price) *
                                           book.quantity;
-                                  return total;
-                              })}
+                              }) && `$${Math.floor(totalPrice * 100) / 100}`}
                     </b>
                 </h4>
-                <Button variant="secondary">
+                <Button variant="secondary" onClick={onPlaceOrder}>
                     <b>Place order</b>
                 </Button>
             </div>

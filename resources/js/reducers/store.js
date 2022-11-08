@@ -6,6 +6,7 @@ import BookFilterReducer from "./BookFilterSlice";
 import { configureStore } from "@reduxjs/toolkit";
 import BookDetailReducer from "./BookDetailSlice";
 import BookShopFilterReducer from "./BookShopFilterSlice";
+import BookCartReducer from "./BookCartSlice";
 
 const store = configureStore({
     reducer: {
@@ -16,6 +17,7 @@ const store = configureStore({
         bookFilter: BookFilterReducer,
         bookShopFilter: BookShopFilterReducer,
         bookDetail: BookDetailReducer,
+        bookCart: BookCartReducer,
     },
 });
 

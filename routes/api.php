@@ -30,11 +30,9 @@ Route::get('books/{book}/reviews/filter',[ReviewBookApiController::class, 'filte
 Route::apiResource('books/{book}/reviews',ReviewBookApiController::class);
 Route::apiResource('books', BookApiController::class);
 Route::apiResource('filters',FilterApiController::class)->only('index');
-Route::apiResource('orders',OrderApiController::class)->only('index');
+Route::apiResource('orders/{userId}',OrderApiController::class)->only('store');
 
 Route::middleware(['auth:sanctum'])->group(function () {
-    // Route::apiResource('books', BookApiController::class);
-    
     
     Route::delete('login', [LoginController::class, 'logout'])->name('api.logout');
 });

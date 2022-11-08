@@ -79,14 +79,6 @@ class ReviewBookRepository implements ReviewBookRepositoryInterface{
         $review->rating_start = $data['rating_start'];
         $review->review_date = Carbon::now()->timezone('Asia/Ho_Chi_Minh');
         $review->save();
-
-        // $review = Review::create([
-        //     'book_id' => $book,
-        //     'review_title' =>  $data['review_title'],
-        //     'review_details' => $data['review_details'],
-        //     'rating_start' => $data['rating_start'],
-        //     'review_date' => Carbon::now()->timezone('Asia/Ho_Chi_Minh'),
-        // ]);
         
     }
 

@@ -3,17 +3,19 @@ import { Col, Container, Row } from "react-bootstrap";
 import "./Cart.css";
 import CartTotals from "./CartTotals";
 import CartItems from "./CartItems";
+import { useSelector } from "react-redux";
 
 const Cart = () => {
-    const booksOrderStorage = JSON.parse(localStorage.getItem("booksOrder"));
+    const show = useSelector((state) => state.bookCart.show);
+    const booksOrderStorage =
+        JSON.parse(localStorage.getItem("booksOrder")) !== null
+            ? JSON.parse(localStorage.getItem("booksOrder"))
+            : [];
+
     return (
         <Container className="container">
             <h4>
-                <b>
-                    Your cart:{" "}
-                    {booksOrderStorage == null ? 0 : booksOrderStorage.length}{" "}
-                    items
-                </b>
+                <b>Your cart: {show ? 0 : booksOrderStorage.length} items</b>
             </h4>
             <hr />
             <Row>

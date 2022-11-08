@@ -65,15 +65,6 @@ const Detail = () => {
         setIsClickedFilter(false);
     };
 
-    const bookStorage = JSON.parse(localStorage.getItem("booksOrder"));
-    const booksOrder = [];
-
-    if (bookStorage !== null) {
-        bookStorage.map((book) => {
-            booksOrder.push(book);
-        });
-    }
-
     useEffect(() => {
         if (isClickedFilter && filterParams.rating_star !== "") {
             return dispatch(

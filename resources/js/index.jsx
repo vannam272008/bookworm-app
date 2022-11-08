@@ -14,7 +14,7 @@ const Index = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/shop" element={<ShopPage />} />
                 <Route path="/about" element={<AboutPage />} />
-                <Route path="/cart" element={<CartPage />} />
+                <Route path="/cart/:userId" element={<CartPage />} />
                 <Route path="/detail/:bookId" element={<DetailPage />} />
             </Routes>
         </Fragment>

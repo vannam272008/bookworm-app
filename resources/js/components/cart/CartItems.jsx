@@ -1,13 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Table } from "react-bootstrap";
 import "./CartItems.css";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Product from "./Product";
+import { useSelector } from "react-redux";
 
 const CartItems = () => {
-    const booksOrderStorage = JSON.parse(localStorage.getItem("booksOrder"));
-    
+    const booksOrderStorage =
+        JSON.parse(localStorage.getItem("booksOrder")) !== null
+            ? JSON.parse(localStorage.getItem("booksOrder"))
+            : [];
+
+    const show = useSelector((state) => state.bookCart.show);
+
     const onSubQuantity = () => {};
     return (
         <Table className="table">
@@ -20,7 +26,7 @@ const CartItems = () => {
                 </tr>
             </thead>
             <tbody className="tbody">
-                {booksOrderStorage == null ? (
+                {show ? (
                     <></>
                 ) : (
                     booksOrderStorage.map((book) => {
@@ -31,10 +37,10 @@ const CartItems = () => {
                                 </td>
                                 <td className="price">
                                     <h5>
-                                        <b>{book.final_price}</b>
+                                        <b>{`$${book.final_price}`}</b>
                                     </h5>
                                     {book.final_price !== book.book_price && (
-                                        <a>{book.book_price}</a>
+                                        <a>{`$${book.book_price}`}</a>
                                     )}
                                 </td>
                                 <td>
@@ -64,7 +70,9 @@ const CartItems = () => {
                                 <td>
                                     <h5>
                                         <b>
-                                            {book.quantity * book.final_price}
+                                            {`$${
+                                                book.quantity * book.final_price
+                                            }`}
                                         </b>
                                     </h5>
                                 </td>

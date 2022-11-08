@@ -47,8 +47,10 @@ const Header = () => {
                         About
                     </NavLink>
                     <NavLink
-                        to="/cart"
-                        className={`${path_name === "/cart" && "select-page"}`}
+                        to="/cart/1"
+                        className={`${
+                            path_name === "/cart/1" && "select-page"
+                        }`}
                     >
                         Cart
                     </NavLink>

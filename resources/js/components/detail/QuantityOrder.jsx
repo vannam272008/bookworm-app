@@ -3,8 +3,11 @@ import "./QuantityOrder.css";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button } from "react-bootstrap";
+import { useDispatch } from "react-redux";
+import { isNotChangeShow } from "../../services/BookCartService";
 
 const QuantityOrder = (props) => {
+    const dispatch = useDispatch();
     const bookStorage = JSON.parse(localStorage.getItem("booksOrder"));
     const booksOrder = [];
 
@@ -35,9 +38,9 @@ const QuantityOrder = (props) => {
         final_price: props.bookInfo.final_price,
         quantity: 0,
     };
-    console.log(quantity);
 
     const onAddTotalQuantity = () => {
+        dispatch(isNotChangeShow());
         var flag = false;
         if (booksOrder.length === 0) {
             booksOrder.push(bookDetail);
@@ -68,11 +71,11 @@ const QuantityOrder = (props) => {
             <div className="order-price">
                 <span>
                     {props.bookInfo.book_price !== props.bookInfo.final_price
-                        ? props.bookInfo.book_price
+                        ? `$${props.bookInfo.book_price}`
                         : ""}
                 </span>
                 <a>
-                    <b> {props.bookInfo.final_price}</b>
+                    <b> {`$${props.bookInfo.final_price}`}</b>
                 </a>
                 <hr />
             </div>
