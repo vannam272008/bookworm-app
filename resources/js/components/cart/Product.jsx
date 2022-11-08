@@ -1,20 +1,29 @@
-import React, { Fragment } from 'react'
-import { Link } from 'react-router-dom'
-import "./Product.css"
+import React, { Fragment } from "react";
+import { Link } from "react-router-dom";
+import "./Product.css";
 
-const Product = () => {
-  return (
-    <Link to="/detail" className='link-item'>
-        <Fragment>
-          <img className='img-product' src="./images/bookcover/book1.jpg"/>
-          <div className='content'>
-              <h5><b>Book Title</b></h5>
-              <p>Author name</p>
-          </div>
-        </Fragment>
-    </Link> 
-    
-  )
-}
+const Product = (props) => {
+    const hostname = window.location.host;
+    return (
+        <Link to={`/detail/${props.book.book_id}`} className="link-item">
+            <Fragment>
+                <img
+                    className="img-product"
+                    src={`http://${hostname}/images/bookcover/${
+                        props.book.book_cover_photo !== null
+                            ? props.book.book_cover_photo
+                            : "book_1"
+                    }.jpg`}
+                />
+                <div className="content">
+                    <h5>
+                        <b>{props.book.book_title}</b>
+                    </h5>
+                    <p>{props.book.author_name}</p>
+                </div>
+            </Fragment>
+        </Link>
+    );
+};
 
-export default Product
+export default Product;

@@ -8,7 +8,11 @@ const Info = (props) => {
         <div className="row-book-detail">
             <div className="col-img">
                 <img
-                    src={`http://${hostname}/images/bookcover/${props.bookInfo.book_cover_photo}.jpg`}
+                    src={`http://${hostname}/images/bookcover/${
+                        props.bookInfo.book_cover_photo !== null
+                            ? props.bookInfo.book_cover_photo
+                            : "book_1"
+                    }.jpg`}
                 />
                 <p>
                     By (author)

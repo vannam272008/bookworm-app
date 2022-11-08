@@ -1,5 +1,6 @@
 .cart-totals {
     border: 3px solid rgb(234, 226, 226);
+    margin-top: 10px;
 }
 
 .cart-totals .cart-title {

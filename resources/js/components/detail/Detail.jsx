@@ -44,12 +44,14 @@ const Detail = () => {
     //catch events changeFilterParams
     const [filterParams, setFilterParams] = useState({
         rating_star: "",
+        name: "",
     });
     const onChangeFilterParamsHandler = (new_filter_param) => {
         setFilterParams((prevValue) => {
             return {
                 ...prevValue,
                 rating_star: new_filter_param.rating_star,
+                name: new_filter_param.name,
             };
         });
     };
@@ -62,6 +64,15 @@ const Detail = () => {
     const noneClickedFilterHandler = () => {
         setIsClickedFilter(false);
     };
+
+    const bookStorage = JSON.parse(localStorage.getItem("booksOrder"));
+    const booksOrder = [];
+
+    if (bookStorage !== null) {
+        bookStorage.map((book) => {
+            booksOrder.push(book);
+        });
+    }
 
     useEffect(() => {
         if (isClickedFilter && filterParams.rating_star !== "") {
@@ -77,8 +88,6 @@ const Detail = () => {
         }
         dispatch(fetchBookDetailData(bookId, params.sort, params.show, page));
     }, [params, page, filterParams, isClickedFilter]);
-
-    console.log(filterParams);
     return (
         <Container>
             {!success && <Loading />}
@@ -118,7 +127,10 @@ const Detail = () => {
                             />
                         </Col>
                         <Col md={4}>
-                            <QuantityOrder bookInfo={bookInfo} />
+                            <QuantityOrder
+                                bookInfo={bookInfo}
+                                // booksOrder={booksOrder}
+                            />
                             <PostReview />
                         </Col>
                     </Row>

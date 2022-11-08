@@ -47,11 +47,14 @@ hr {
 .card-price span{
     text-decoration: line-through;
     font-size: 0.7rem;
-    margin-right: 3px;
     margin-left: 10px;
 }
 
 .card-price {
     padding: 5px;
+}
+
+.card-price b {
+    margin-left: 5px;
 }
 

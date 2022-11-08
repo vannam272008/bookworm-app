@@ -20,7 +20,10 @@ const Item = (props) => {
                 </Card.Body>
                 <hr></hr>
                 <Card.Text className="card-price">
-                    <span>{props.bookPrice}</span>
+                    {props.bookPrice !== props.finalPrice && (
+                        <span>{props.bookPrice}</span>
+                    )}
+
                     <b>{props.finalPrice}</b>
                 </Card.Text>
             </Card>

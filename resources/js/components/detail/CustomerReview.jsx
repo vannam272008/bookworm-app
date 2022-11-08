@@ -7,6 +7,7 @@ import Review from "./Review";
 const CustomerReview = (props) => {
     const [filterParams, setFilterParams] = useState({
         rating_star: "",
+        name: "",
     });
 
     const clickStarHandler = (e) => {
@@ -14,6 +15,7 @@ const CustomerReview = (props) => {
             return {
                 ...prevValue,
                 rating_star: e.target.value,
+                name: e.target.value,
             };
         });
         props.clickedFilterHandler();
@@ -23,7 +25,7 @@ const CustomerReview = (props) => {
         setFilterParams((prevValue) => {
             return {
                 ...prevValue,
-                rating_star: e.target.value,
+                name: e.target.value,
             };
         });
         props.noneClickedFilterHandler();
@@ -35,7 +37,6 @@ const CustomerReview = (props) => {
             props.onChangePage(1);
         };
     }, [filterParams]);
-    console.log(props.reviews);
     return (
         <Fragment>
             <div className="customer-review">
@@ -75,8 +76,8 @@ const CustomerReview = (props) => {
                                     <Button
                                         onClick={nonClickStarHandler}
                                         className={
-                                            props.filterParams.rating_star ==
-                                                "" && "btn-text"
+                                            props.filterParams.name == "" &&
+                                            "btn-text"
                                         }
                                         value=""
                                     >
@@ -90,8 +91,8 @@ const CustomerReview = (props) => {
                                 <p>
                                     <Button
                                         className={
-                                            props.filterParams.rating_star ==
-                                                "5" && "btn-text"
+                                            props.filterParams.name == "5" &&
+                                            "btn-text"
                                         }
                                         onClick={clickStarHandler}
                                         value="5"
@@ -105,8 +106,8 @@ const CustomerReview = (props) => {
                                     |{" "}
                                     <Button
                                         className={
-                                            props.filterParams.rating_star ==
-                                                "4" && "btn-text"
+                                            props.filterParams.name == "4" &&
+                                            "btn-text"
                                         }
                                         onClick={clickStarHandler}
                                         value="4"
@@ -120,8 +121,8 @@ const CustomerReview = (props) => {
                                     |{" "}
                                     <Button
                                         className={
-                                            props.filterParams.rating_star ==
-                                                "3" && "btn-text"
+                                            props.filterParams.name == "3" &&
+                                            "btn-text"
                                         }
                                         onClick={clickStarHandler}
                                         value="3"
@@ -135,8 +136,8 @@ const CustomerReview = (props) => {
                                     |{" "}
                                     <Button
                                         className={
-                                            props.filterParams.rating_star ==
-                                                "2" && "btn-text"
+                                            props.filterParams.name == "2" &&
+                                            "btn-text"
                                         }
                                         onClick={clickStarHandler}
                                         value="2"
@@ -150,8 +151,8 @@ const CustomerReview = (props) => {
                                     |{" "}
                                     <Button
                                         className={
-                                            props.filterParams.rating_star ==
-                                                "1" && "btn-text"
+                                            props.filterParams.name == "1" &&
+                                            "btn-text"
                                         }
                                         onClick={clickStarHandler}
                                         value="1"
